@@ -160,6 +160,17 @@ body {
   margin-left: auto;
 }
 
+.exploreSetting {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+  background: #202832;
+}
+
+.exploreSetting .chk {
+  color: var(--text);
+  font-size: 12px;
+}
+
 .chk input {
   accent-color: var(--green);
 }

@@ -478,7 +478,8 @@ async function copyText(text) {
 async function scan(deep) {
   setBusy(true, deep ? 'reveal' : 'scan');
   showNotice(deep ? 'Clicking the artwork to reveal the full-resolution viewer…' : '');
-  const res = deep ? await window.__DA_API.deepScan() : window.__DA_API.scan();
+  const showExploreImages = $('#chkExplore').checked;
+  const res = deep ? await window.__DA_API.deepScan(showExploreImages) : window.__DA_API.scan(showExploreImages);
   setBusy(false);
   if (!res || !res.ok) {
     showNotice(`Could not scan this page: ${(res && res.error) || 'unknown error'}`, 'err');
@@ -548,6 +549,13 @@ async function initBestOnly() {
   try {
     const stored = await chrome.storage.local.get('bestOnly');
     if (stored.bestOnly) $('#chkBest').checked = true;
+  } catch (e) { }
+}
+
+async function initExploreImages() {
+  try {
+    const stored = await chrome.storage.local.get('showExploreImages');
+    $('#chkExplore').checked = stored.showExploreImages === true;
   } catch (e) { }
 }
 
@@ -672,6 +680,10 @@ function bindUi() {
     renderList();
     updateActionLabels();
   });
+  $('#chkExplore').addEventListener('change', () => {
+    chrome.storage.local.set({ showExploreImages: $('#chkExplore').checked });
+    scan(false);
+  });
   $('#btnRangeScan').addEventListener('click', () => scanRange());
   $('#btnRangeDownload').addEventListener('click', () => {
     const items = state.range && state.range.items ? state.range.items : [];
@@ -730,28 +742,86 @@ chrome.runtime.onMessage.addListener((msg) => {
 
 const SIDEBAR_HOST_ID = 'da-image-hunter-sidebar';
 const SIDEBAR_STATE_KEY = 'sidebarState';
-const PAGE_SCROLL_STYLE_ID = 'dah-page-scrollbar-style';
+const PAGE_LAYOUT_STYLE_ID = 'dah-page-layout-style';
 let sidebarInited = false;
 let lastHref = location.href;
 let navTimer = null;
+let layoutStyleTimer = null;
 
 function hidePageScrollbar() {
-  if (document.getElementById(PAGE_SCROLL_STYLE_ID)) return;
-  const styleEl = document.createElement('style');
-  styleEl.id = PAGE_SCROLL_STYLE_ID;
-  styleEl.textContent = 'html{scrollbar-width:none !important;}html::-webkit-scrollbar{display:none !important;width:0 !important;height:0 !important;}';
-  (document.head || document.documentElement).appendChild(styleEl);
+  clearTimeout(layoutStyleTimer);
+  if (!document.getElementById(PAGE_LAYOUT_STYLE_ID)) {
+    const styleEl = document.createElement('style');
+    styleEl.id = PAGE_LAYOUT_STYLE_ID;
+    styleEl.textContent = `
+      html.dah-sidebar-open {
+        --dah-sidebar-track: 0px;
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) var(--dah-sidebar-track) !important;
+        grid-template-rows: minmax(100vh, auto) !important;
+        align-items: start !important;
+        overflow-x: clip !important;
+        transition: grid-template-columns 340ms cubic-bezier(.22, .8, .25, 1);
+      }
+      html.dah-sidebar-open.dah-sidebar-ready:not(.dah-sidebar-min) { --dah-sidebar-track: 600px; }
+      html.dah-sidebar-open.dah-sidebar-min { --dah-sidebar-track: 46px; }
+      html.dah-sidebar-open.dah-sidebar-closing { --dah-sidebar-track: 0px; }
+      html.dah-sidebar-open > body {
+        grid-column: 1 !important;
+        grid-row: 1 !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        margin: 0 !important;
+      }
+      html.dah-sidebar-open > #${SIDEBAR_HOST_ID} {
+        position: sticky !important;
+        grid-column: 2 !important;
+        grid-row: 1 !important;
+        align-self: start !important;
+        top: 0 !important;
+        right: auto !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        height: 100vh !important;
+        transition: opacity 220ms ease, transform 220ms ease;
+      }
+      html.dah-sidebar-open.dah-sidebar-closing > #${SIDEBAR_HOST_ID} {
+        opacity: 0;
+        transform: translateX(14px) !important;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html.dah-sidebar-open,
+        html.dah-sidebar-open > #${SIDEBAR_HOST_ID} { transition: none; }
+      }
+    `;
+    (document.head || document.documentElement).appendChild(styleEl);
+  }
+  document.documentElement.classList.remove('dah-sidebar-closing');
+  document.documentElement.classList.add('dah-sidebar-open');
 }
 
 function restorePageScrollbar() {
-  const el = document.getElementById(PAGE_SCROLL_STYLE_ID);
-  if (el) el.remove();
+  document.documentElement.classList.remove('dah-sidebar-ready', 'dah-sidebar-min');
+  document.documentElement.classList.add('dah-sidebar-closing');
+  clearTimeout(layoutStyleTimer);
+  layoutStyleTimer = setTimeout(() => {
+    if (!document.getElementById(SIDEBAR_HOST_ID)) {
+      document.documentElement.classList.remove('dah-sidebar-open', 'dah-sidebar-closing');
+      const styleEl = document.getElementById(PAGE_LAYOUT_STYLE_ID);
+      if (styleEl) styleEl.remove();
+    }
+  }, 500);
 }
 
 function unmountSidebar(host) {
-  host.remove();
+  host.classList.add('dah-closing');
+  host.style.pointerEvents = 'none';
+  host.style.transform = 'translateX(100%)';
   restorePageScrollbar();
   saveSidebarState('closed');
+  clearTimeout(host.__dahRemoveTimer);
+  host.__dahRemoveTimer = setTimeout(() => host.remove(), 400);
 }
 
 function scheduleRescan() {
@@ -778,6 +848,7 @@ function saveSidebarState(value) {
 
 function setMinimized(host, minimized) {
   host.classList.toggle('dah-min', minimized);
+  document.documentElement.classList.toggle('dah-sidebar-min', minimized);
   host.style.width = minimized ? '46px' : '600px';
   saveSidebarState(minimized ? 'min' : 'open');
 }
@@ -806,7 +877,7 @@ async function mountSidebar(minimized) {
   const host = document.createElement('div');
   host.id = SIDEBAR_HOST_ID;
   if (minimized) host.classList.add('dah-min');
-  host.style.cssText = `position:fixed;top:0;right:0;width:${minimized ? 46 : 600}px;height:100vh;z-index:2147483647;transition:width .18s ease;`;
+  host.style.cssText = `position:sticky;top:0;width:${minimized ? 46 : 600}px;height:100vh;z-index:2147483647;overflow:hidden;transform:translateX(14px);opacity:0;`;
   const root = host.attachShadow({ mode: 'open' });
   const [css, sidebarCss, markup] = await Promise.all([
     fetch(chrome.runtime.getURL('popup.css')).then((r) => r.text()),
@@ -841,7 +912,7 @@ async function mountSidebar(minimized) {
 
   const tab = document.createElement('button');
   tab.className = 'sidebarTab';
-  tab.title = 'Open DeviantArt Image Hunter';
+  tab.title = 'Open Deviation Lens';
   const tabLogo = document.createElement('img');
   tabLogo.src = chrome.runtime.getURL('icons/icon48.png');
   tabLogo.alt = '';
@@ -855,6 +926,12 @@ async function mountSidebar(minimized) {
 
   document.documentElement.appendChild(host);
   hidePageScrollbar();
+  document.documentElement.classList.toggle('dah-sidebar-min', !!minimized);
+  requestAnimationFrame(() => {
+    document.documentElement.classList.add('dah-sidebar-ready');
+    host.style.transform = 'translateX(0)';
+    host.style.opacity = '1';
+  });
   $ = (s) => root.querySelector(s);
   if (!sidebarInited) {
     sidebarInited = true;
@@ -862,6 +939,7 @@ async function mountSidebar(minimized) {
     decorateFooter(root);
     initFolderButton();
     await initBestOnly();
+    await initExploreImages();
     await scan(false);
   }
 }
@@ -869,6 +947,17 @@ async function mountSidebar(minimized) {
 function toggleSidebar() {
   const existing = document.getElementById(SIDEBAR_HOST_ID);
   if (existing) {
+    if (existing.classList.contains('dah-closing')) {
+      clearTimeout(existing.__dahRemoveTimer);
+      existing.classList.remove('dah-closing');
+      existing.style.pointerEvents = '';
+      hidePageScrollbar();
+      document.documentElement.classList.add('dah-sidebar-ready');
+      existing.style.transform = 'translateX(0)';
+      existing.style.opacity = '1';
+      saveSidebarState('open');
+      return Promise.resolve();
+    }
     if (existing.classList.contains('dah-min')) {
       setMinimized(existing, false);
       return Promise.resolve();

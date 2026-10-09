@@ -2,7 +2,7 @@
   height: 100%;
   max-height: none;
   border-radius: 0;
-  box-shadow: -10px 0 30px rgba(0, 0, 0, .55);
+  box-shadow: -1px 0 0 rgba(255, 255, 255, .08);
   color: var(--text);
   font: 13px/1.4 "Segoe UI", system-ui, -apple-system, sans-serif;
 }
@@ -73,6 +73,10 @@
 
 .sidebarTab:hover .sidebarTabChev {
   color: #0adb4f;
+}
+
+:host(.dah-closing) {
+  pointer-events: none !important;
 }
 
 .actions {

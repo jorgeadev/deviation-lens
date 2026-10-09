@@ -1,8 +1,28 @@
+# Dependencies and local browser tooling
 node_modules/
 tools/browsers/
 tools/out/
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Local diagnostics and logs
 *.log
+pnpm-debug.log*
 .DS_Store
+Thumbs.db
+desktop.ini
 tools/*.txt
 tools/probe*.json
-pnpm-debug.log*
+
+# Generated release archives; rebuild these from tracked source
+publish/packages/*.zip
+
+# Local build and test output
+dist/
+coverage/
+
+# Local-only task notes
+TODO.md

@@ -1,0 +1,28 @@
+name: Feature request
+description: Suggest an improvement to Deviation Lens.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: "Search existing issues first so related proposals can be discussed together."
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: "What are you trying to do, and what gets in the way?"
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: "Describe what you would like the extension to do."
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false

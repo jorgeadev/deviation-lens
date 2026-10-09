@@ -1,8 +1,8 @@
 {
-  "name": "@dah/extension",
-  "version": "1.0.0",
+  "name": "@deviation-lens/extension",
+  "version": "0.1.0-alpha.1",
   "private": true,
-  "description": "Chrome extension: lists the images of a DeviantArt page's main view with dimensions and file size, and downloads them at the best quality the source offers.",
+  "description": "Deviation Lens browser extension for finding and downloading DeviantArt artwork at the best available quality.",
   "scripts": {
     "check": "node --check background.js && node --check content.js && node --check popup.js && node --check saver.js"
   }

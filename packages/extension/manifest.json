@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "DeviantArt Image Hunter",
-  "version": "1.0.0",
-  "description": "Lists the images in the main view of any DeviantArt page with dimensions and file size, and downloads them at the best quality the source offers - including the artist's original file when a download button exists.",
-  "minimum_chrome_version": "112",
+  "name": "Deviation Lens",
+  "version": "0.1.0",
+  "description": "Find and download artwork images from DeviantArt at the best available quality.",
+  "minimum_chrome_version": "141",
   "action": {
-    "default_title": "DeviantArt Image Hunter",
+    "default_title": "Deviation Lens",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",
@@ -22,19 +22,46 @@
   "background": {
     "service_worker": "background.js"
   },
-  "permissions": ["scripting", "downloads", "storage"],
-  "host_permissions": ["*://*.deviantart.com/*", "*://*.wixmp.com/*"],
+  "permissions": [
+    "activeTab",
+    "sidePanel",
+    "scripting",
+    "downloads",
+    "storage"
+  ],
+  "optional_host_permissions": [
+    "*://*/*"
+  ],
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "host_permissions": [
+    "*://*.deviantart.com/*",
+    "*://*.wixmp.com/*"
+  ],
   "content_scripts": [
     {
-      "matches": ["*://*.deviantart.com/*"],
-      "js": ["content.js", "sidebar.js"],
+      "matches": [
+        "*://*.deviantart.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["popup.css", "sidebar.css", "sidebar.html", "icons/*"],
-      "matches": ["*://*.deviantart.com/*"]
+      "resources": [
+        "popup.css",
+        "sidebar.css",
+        "sidebar.html",
+        "icons/*"
+      ],
+      "matches": [
+        "*://*.deviantart.com/*"
+      ]
     }
-  ]
+  ],
+  "version_name": "0.1.0-alpha.1"
 }

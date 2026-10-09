@@ -1,0 +1,53 @@
+name: Bug report
+description: Report a reproducible problem with Deviation Lens.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: "Search existing issues first. Do not include passwords, session tokens, private messages, or sensitive URLs."
+  - type: input
+    id: version
+    attributes:
+      label: Extension version
+      description: "Find this in the browser extension details."
+      placeholder: "0.1.0-alpha.1"
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      placeholder: "Chrome 141"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: "Give the smallest sequence that reproduces the problem."
+      placeholder: |-
+        1. Open ...
+        2. Click ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant console errors or screenshots
+      description: "Remove personal information, credentials, and private URLs."
+    validations:
+      required: false

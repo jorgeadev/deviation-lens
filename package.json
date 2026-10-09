@@ -1,15 +1,15 @@
 {
-  "name": "deviantart-image-hunter",
-  "version": "0.1.0",
+  "name": "deviation-lens",
+  "version": "0.1.0-alpha.1",
   "private": true,
-  "description": "pnpm monorepo for the DeviantArt Image Hunter browser extension and future apps.",
+  "description": "pnpm monorepo for the Deviation Lens browser extension and future apps.",
   "packageManager": "pnpm@12.9.1",
   "scripts": {
-    "check": "pnpm --filter @dah/extension run check",
-    "test:smoke": "pnpm --filter @dah/tools run smoke",
-    "test:e2e": "pnpm --filter @dah/tools run e2e",
-    "test:e2e:profile": "pnpm --filter @dah/tools run e2e:profile",
-    "test:visual": "pnpm --filter @dah/tools run e2e:visual",
-    "test:sidebar": "pnpm --filter @dah/tools run e2e:sidebar"
+    "check": "pnpm --filter @deviation-lens/extension run check",
+    "test:smoke": "pnpm --filter @deviation-lens/tools run smoke",
+    "test:e2e": "pnpm --filter @deviation-lens/tools run e2e",
+    "test:e2e:profile": "pnpm --filter @deviation-lens/tools run e2e:profile",
+    "test:visual": "pnpm --filter @deviation-lens/tools run e2e:visual",
+    "test:sidebar": "pnpm --filter @deviation-lens/tools run e2e:sidebar"
   }
 }

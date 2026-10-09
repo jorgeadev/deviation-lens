@@ -3,9 +3,11 @@
   window.__DA_IMAGE_HUNTER__ = true;
 
   const WIX_HOST = /^images-wixmp-[a-z0-9]+\.wixmp\.com$/i;
-  const BAD_HEADING = /more like this|recommended|you might|similar deviations|comments|collections|groups|journals|popular|daily deviations|explore|discover|deviants also|other deviations|commission|shop|prints|advertise|watching/i;
+  const EXPLORE_HEADING = /^(?:explore\s+(?!more\b).+|from\s+deviants\s+you\s+watch)$/i;
   const ROLE_RANK = { download: 0, max: 1, original: 2, fullview: 3, preview: 4, variant: 5, scaled: 6, crop: 7 };
   const ROLE_LABEL = { download: 'original', max: 'max', original: 'original', fullview: 'fullview', preview: 'preview', variant: 'variant', scaled: 'scaled', crop: 'thumb' };
+  let showExploreImages = false;
+  let allowAnyPage = false;
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -39,7 +41,26 @@
     } catch (e) {
       return null;
     }
-    if (!WIX_HOST.test(url.hostname)) return null;
+    if (!WIX_HOST.test(url.hostname)) {
+      if (!allowAnyPage || !/^https?:$/.test(url.protocol)) return null;
+      const genericExt = /\.(png|jpe?g|gif|webp|bmp|avif|svg)$/i.exec(url.pathname);
+      if (!genericExt) return null;
+      const ext = genericExt[1].toLowerCase().replace('jpeg', 'jpg');
+      return {
+        url: url.toString(),
+        base: url.toString(),
+        shortId: '',
+        ext,
+        w: 0,
+        h: 0,
+        q: 0,
+        type: null,
+        pretty: url.pathname.split('/').pop() || '',
+        token: null,
+        caps: null,
+        role: 'max'
+      };
+    }
     if (url.pathname.includes('{') || url.pathname.includes('}')) return null;
     const m = url.pathname.match(/^(\/f\/[^/]+\/[^/]+\.(png|jpe?g|gif|webp|bmp|avif))(\/v1\/.*)?$/i);
     if (!m) return null;
@@ -111,10 +132,75 @@
     for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
       const tag = n.tagName;
       if (tag === 'ASIDE' || tag === 'NAV' || tag === 'HEADER' || tag === 'FOOTER') return true;
-      if (tag === 'SECTION') {
-        const h = n.querySelector('h1, h2, h3');
-        if (h && BAD_HEADING.test(h.textContent || '')) return true;
+    }
+    return false;
+  }
+
+  function getPageRoots() {
+    const roots = [document];
+    for (let i = 0; i < roots.length; i++) {
+      roots[i].querySelectorAll('*').forEach((el) => {
+        if (el.shadowRoot) roots.push(el.shadowRoot);
+      });
+    }
+    return roots;
+  }
+
+  function collectSectionHeadings() {
+    const headingSelector = 'h1, h2, h3, h4, h5, h6, [role="heading"]';
+    const customSelector = '[class*="heading" i], [class*="section-title" i], [data-testid*="heading" i], [data-testid*="section-title" i]';
+    const entries = [];
+    const targetPositions = new Map();
+
+    getPageRoots().forEach((root) => {
+      root.querySelectorAll(headingSelector).forEach((el) => {
+        const tagLevel = /^H([1-6])$/.exec(el.tagName);
+        const level = Number(el.getAttribute('aria-level')) || (tagLevel ? Number(tagLevel[1]) : 2);
+        const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+        const rect = el.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) return;
+        const top = rect.top + window.scrollY;
+        entries.push({ el, level, top, explore: EXPLORE_HEADING.test(text) });
+        if (EXPLORE_HEADING.test(text)) {
+          const key = `${text.toLowerCase()}|${Math.round(top)}`;
+          const prev = targetPositions.get(key);
+          if (!prev || level > prev.level) targetPositions.set(key, { el, level, top, explore: true });
+        }
+      });
+
+      root.querySelectorAll(customSelector).forEach((el) => {
+        const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+        if (!EXPLORE_HEADING.test(text)) return;
+        const rect = el.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) return;
+        const top = rect.top + window.scrollY;
+        const key = `${text.toLowerCase()}|${Math.round(top)}`;
+        if (!targetPositions.has(key)) targetPositions.set(key, { el, level: 2, top, explore: true });
+      });
+    });
+
+    const targets = [...targetPositions.values()];
+    const seen = new Set(entries.map((entry) => entry.el));
+    targets.forEach((entry) => {
+      if (!seen.has(entry.el)) entries.push(entry);
+    });
+    return entries.sort((a, b) => a.top - b.top || a.level - b.level);
+  }
+
+  function inExploreSection(el, headings) {
+    const rect = el.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return false;
+    const top = rect.top + window.scrollY;
+
+    for (const heading of headings) {
+      if (!heading.explore || heading.top > top) continue;
+      let ended = false;
+      for (const next of headings) {
+        if (next.top <= heading.top + 1 || next.level > heading.level) continue;
+        if (next.top <= top) ended = true;
+        break;
       }
+      if (!ended) return true;
     }
     return false;
   }
@@ -124,7 +210,7 @@
     const add = (raw, info) => {
       if (!raw || typeof raw !== 'string') return;
       const s = raw.trim().replace(/&amp;/g, '&');
-      if (!/wixmp\.com/i.test(s)) return;
+      if (!/^https?:\/\//i.test(s)) return;
       const prev = map.get(s);
       if (prev) {
         prev.rw = Math.max(prev.rw, info.rw || 0);
@@ -157,10 +243,7 @@
       }
     };
 
-    const roots = [document];
-    document.querySelectorAll('*').forEach((el) => {
-      if (el.shadowRoot) roots.push(el.shadowRoot);
-    });
+    const roots = getPageRoots();
 
     roots.forEach((root) => {
       root.querySelectorAll('img').forEach((img) => {
@@ -389,6 +472,7 @@
 
   function scanMainWindow() {
     const records = collectCandidates();
+    const sectionHeadings = collectSectionHeadings();
     const variants = [];
     records.forEach((rec) => {
       const v = parseVariant(rec.url);
@@ -405,7 +489,8 @@
       variants.push(v);
     });
 
-    const isArtPage = /\/art\//.test(location.pathname);
+    const isDeviantArt = location.hostname === 'deviantart.com' || location.hostname.endsWith('.deviantart.com');
+    const isArtPage = isDeviantArt && /\/art\//.test(location.pathname);
     const deviationId = (location.pathname.match(/-(\d+)\/?$/) || [])[1] || '';
     let mainBase = findMainBase(variants);
     if (!mainBase) {
@@ -418,13 +503,15 @@
         }
       });
     }
-    const downloadUrl = findDownloadUrl(mainBase, deviationId);
+    const downloadUrl = isDeviantArt ? findDownloadUrl(mainBase, deviationId) : null;
 
     const kept = variants.filter((v) => {
       if (!v.base) return false;
       if (v.role === 'original') return false;
       if (isArtPage && mainBase) return v.base === mainBase;
-      if (v.el && sectionBad(v.el)) return false;
+      const inExplore = !!(v.el && inExploreSection(v.el, sectionHeadings));
+      if (v.el && sectionBad(v.el) && !(showExploreImages && inExplore)) return false;
+      if (!showExploreImages && inExplore) return false;
       if (v.fromScript) return false;
       if (v.rw >= 160 || v.rh >= 160 || v.inArtLink) return true;
       if (v.naturalW >= 400 && v.naturalH >= 400) return true;
@@ -453,9 +540,9 @@
     const titleEl = document.querySelector('h1');
     const rawTitle = (titleEl && titleEl.textContent ? titleEl.textContent : document.title) || '';
     const title = rawTitle.replace(/\s+on DeviantArt\s*$/i, '').replace(/\s+by\s+[^|]+$/i, '').trim().slice(0, 140);
-    const artist = (location.pathname.split('/').filter(Boolean)[0] || '').replace(/^~/, '');
+    const artist = isDeviantArt ? (location.pathname.split('/').filter(Boolean)[0] || '').replace(/^~/, '') : '';
     const reserved = /^(tag|tags|search|topics?|explore|popular|daily-deviations|deviants|settings|about|shop|prints|marketplace|studio|watch|notifications|submit|join|users|team)$/i;
-    const isProfile = !isArtPage && !!artist && !reserved.test(artist);
+    const isProfile = isDeviantArt && !isArtPage && !!artist && !reserved.test(artist);
     const downloadable = !!(downloadUrl && (!mainBase || capped.some((a) => a.downloadUrl)));
 
     return {
@@ -551,7 +638,8 @@
     return best;
   }
 
-  async function deepScan() {
+  async function deepScan(includeExploreImages = showExploreImages) {
+    showExploreImages = !!includeExploreImages;
     const before = scanMainWindow();
     const target = findMainArtworkElement(before.page.mainBase);
     let portalOpened = false;
@@ -737,7 +825,14 @@
     }
   }
 
-  window.__DA_API = { scan: scanMainWindow, deepScan, profileScan };
+  window.__DA_API = {
+    scan: (includeExploreImages = showExploreImages) => {
+      showExploreImages = !!includeExploreImages;
+      return scanMainWindow();
+    },
+    deepScan,
+    profileScan
+  };
 
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (!msg || typeof msg !== 'object') return;
@@ -747,6 +842,8 @@
     }
     if (msg.type === 'DA_SCAN') {
       try {
+        showExploreImages = !!msg.showExploreImages;
+        allowAnyPage = !!msg.allowAnyPage;
         sendResponse(scanMainWindow());
       } catch (e) {
         sendResponse({ ok: false, error: String((e && e.message) || e) });
@@ -754,6 +851,8 @@
       return;
     }
     if (msg.type === 'DA_DEEP_SCAN') {
+      showExploreImages = !!msg.showExploreImages;
+      allowAnyPage = !!msg.allowAnyPage;
       deepScan()
         .then((r) => sendResponse(r))
         .catch((e) => sendResponse({ ok: false, error: String((e && e.message) || e) }));

@@ -1,8 +1,8 @@
 {
-  "name": "@dah/tools",
-  "version": "1.0.0",
+  "name": "@deviation-lens/tools",
+  "version": "0.1.0-alpha.1",
   "private": true,
-  "description": "Research and E2E tooling for the DeviantArt Image Hunter extension (Chrome for Testing + puppeteer-core).",
+  "description": "Research and E2E tooling for the Deviation Lens extension (Chrome for Testing + puppeteer-core).",
   "type": "commonjs",
   "scripts": {
     "smoke": "node check-fs.js",

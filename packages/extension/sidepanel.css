@@ -1,0 +1,61 @@
+html,
+body {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  min-width: 0;
+  overflow: hidden;
+}
+
+body {
+  width: 100%;
+  height: 100vh;
+  max-height: none;
+}
+
+#app {
+  width: 100%;
+  height: 100vh;
+  max-height: none;
+  border-radius: 0;
+}
+
+.top {
+  flex: none;
+}
+
+.top .titles {
+  flex: 1;
+}
+
+.panelClose {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-2);
+  color: var(--muted);
+  font: 21px/1 "Segoe UI", system-ui, sans-serif;
+  cursor: pointer;
+  transition: color .12s, background .12s, border-color .12s;
+}
+
+.panelClose:hover,
+.panelClose:focus-visible {
+  color: var(--text);
+  background: #2a3442;
+  border-color: #465366;
+}
+
+.toolbar {
+  flex: none;
+}
+
+.exploreSetting {
+  flex: none;
+}
+
+.bottom {
+  flex: none;
+}

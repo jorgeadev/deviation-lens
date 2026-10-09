@@ -2,6 +2,7 @@ const $ = (s) => document.querySelector(s);
 
 const state = {
   tabId: null,
+  pageUrl: '',
   data: null,
   sizes: {},
   selected: new Set(),
@@ -73,16 +74,48 @@ function sendBg(msg) {
 }
 
 async function getTargetTab() {
-  const tabs = await chrome.tabs.query({ url: '*://*.deviantart.com/*' });
-  if (!tabs.length) return null;
   const [active] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (active && tabs.some((t) => t.id === active.id)) return active;
-  return tabs[tabs.length - 1];
+  return active || null;
 }
 
-async function ensureContentScript(tabId) {
+function isDeviantArtUrl(rawUrl) {
+  try {
+    const host = new URL(rawUrl).hostname.toLowerCase();
+    return host === 'deviantart.com' || host.endsWith('.deviantart.com');
+  } catch (e) {
+    return false;
+  }
+}
+
+function isWixmpImageUrl(rawUrl) {
+  try {
+    return /^images-wixmp-[a-z0-9]+\.wixmp\.com$/i.test(new URL(rawUrl).hostname);
+  } catch (e) {
+    return false;
+  }
+}
+
+function isWebUrl(rawUrl) {
+  try {
+    return ['http:', 'https:'].includes(new URL(rawUrl).protocol);
+  } catch (e) {
+    return false;
+  }
+}
+
+async function ensureContentScript(tab, permissionGranted) {
+  const tabId = tab.id;
   const ping = await sendTo(tabId, { type: 'DA_PING' });
   if (ping && ping.ok) return true;
+  const url = tab.url || '';
+  if (!isWebUrl(url)) return false;
+  if (!isDeviantArtUrl(url) && !isWixmpImageUrl(url)) {
+    if (!$('#chkAnyPage').checked) return false;
+    const originPattern = `${new URL(url).origin}/*`;
+    const permission = { origins: [originPattern] };
+    const allowed = permissionGranted || await chrome.permissions.contains(permission);
+    if (!allowed) return false;
+  }
   try {
     await chrome.scripting.executeScript({ target: { tabId }, files: ['content.js'] });
   } catch (e) { }
@@ -496,11 +529,36 @@ async function copyText(text) {
   }
 }
 
-async function scan(deep) {
+async function scan(deep, userInitiated) {
   if (!state.tabId) return;
+  const initialUrl = state.pageUrl;
+  let permissionRequest = null;
+  if (userInitiated && $('#chkAnyPage').checked && isWebUrl(initialUrl) && !isDeviantArtUrl(initialUrl) && !isWixmpImageUrl(initialUrl)) {
+    permissionRequest = chrome.permissions.request({ origins: [`${new URL(initialUrl).origin}/*`] });
+  }
+  const tab = await chrome.tabs.get(state.tabId);
+  const url = (tab && tab.url) || '';
+  state.pageUrl = url;
+  if (!isDeviantArtUrl(url) && !isWixmpImageUrl(url) && !$('#chkAnyPage').checked) {
+    showNotice('This page is outside DeviantArt. Enable “Find images on any page” to scan it.', 'err');
+    return;
+  }
+  const permissionGranted = permissionRequest ? await permissionRequest : false;
+  const ready = await ensureContentScript(tab, permissionGranted);
+  if (!ready) {
+    showNotice(isWebUrl(url)
+      ? 'Could not access this site. Click Rescan to grant site access, or check “Find images on any page” first.'
+      : 'Chrome does not allow extensions to scan this browser page.', 'err');
+    return;
+  }
   setBusy(true, deep ? 'reveal' : 'scan');
   showNotice(deep ? 'Clicking the artwork to reveal the full-resolution viewer…' : '');
-  const res = deep ? await sendTo(state.tabId, { type: 'DA_DEEP_SCAN' }) : await sendTo(state.tabId, { type: 'DA_SCAN' });
+  const msg = {
+    type: deep ? 'DA_DEEP_SCAN' : 'DA_SCAN',
+    showExploreImages: $('#chkExplore').checked,
+    allowAnyPage: $('#chkAnyPage').checked
+  };
+  const res = await sendTo(state.tabId, msg);
   setBusy(false);
   if (!res || !res.ok) {
     showNotice(`Could not scan this page: ${(res && res.error) || 'unknown error'}`, 'err');
@@ -514,7 +572,9 @@ async function scan(deep) {
   allImages().forEach(({ img }) => {
     if (img.role !== 'crop') state.selected.add(img.url);
   });
-  $('#pageMeta').textContent = `${res.page.title} — ${res.page.artist} on DeviantArt`;
+  $('#pageMeta').textContent = res.page.artist
+    ? `${res.page.title} — ${res.page.artist} on DeviantArt`
+    : `${res.page.title} — ${new URL(url).hostname}`;
   setupRange();
   renderSummary();
   renderList();
@@ -570,6 +630,20 @@ async function initBestOnly() {
   try {
     const stored = await chrome.storage.local.get('bestOnly');
     if (stored.bestOnly) $('#chkBest').checked = true;
+  } catch (e) { }
+}
+
+async function initExploreImages() {
+  try {
+    const stored = await chrome.storage.local.get('showExploreImages');
+    $('#chkExplore').checked = stored.showExploreImages === true;
+  } catch (e) { }
+}
+
+async function initAnyPage() {
+  try {
+    const stored = await chrome.storage.local.get('allowAnyPage');
+    $('#chkAnyPage').checked = stored.allowAnyPage === true;
   } catch (e) { }
 }
 
@@ -683,8 +757,15 @@ function rangeFilename(it) {
 }
 
 function bindUi() {
-  $('#btnRescan').addEventListener('click', () => scan(false));
-  $('#btnReveal').addEventListener('click', () => scan(true));
+  const closePanel = $('#btnClosePanel');
+  if (closePanel) {
+    closePanel.addEventListener('click', async () => {
+      const currentWindow = await chrome.windows.getCurrent();
+      await chrome.sidePanel.close({ windowId: currentWindow.id });
+    });
+  }
+  $('#btnRescan').addEventListener('click', () => scan(false, true));
+  $('#btnReveal').addEventListener('click', () => scan(true, true));
   $('#chkSmall').addEventListener('change', () => {
     renderList();
     updateActionLabels();
@@ -693,6 +774,15 @@ function bindUi() {
     chrome.storage.local.set({ bestOnly: $('#chkBest').checked });
     renderList();
     updateActionLabels();
+  });
+  $('#chkExplore').addEventListener('change', () => {
+    chrome.storage.local.set({ showExploreImages: $('#chkExplore').checked });
+    if (state.tabId) scan(false);
+  });
+  $('#chkAnyPage').addEventListener('change', () => {
+    const enabled = $('#chkAnyPage').checked;
+    chrome.storage.local.set({ allowAnyPage: enabled });
+    if (state.tabId) scan(false, true);
   });
   $('#btnRangeScan').addEventListener('click', () => scanRange());
   $('#btnRangeDownload').addEventListener('click', () => {
@@ -754,17 +844,32 @@ chrome.runtime.onMessage.addListener((msg) => {
   bindUi();
   initFolderButton();
   await initBestOnly();
+  await initExploreImages();
+  await initAnyPage();
   const tab = await getTargetTab();
   if (!tab) {
-    $('#pageMeta').textContent = 'No DeviantArt tab found';
-    showNotice('Open a DeviantArt page in this window, then click the extension icon again.', 'warn');
+    $('#pageMeta').textContent = 'No active page found';
+    showNotice('Open a web page in this window, then reopen the extension.', 'warn');
     return;
   }
   state.tabId = tab.id;
-  const ready = await ensureContentScript(tab.id);
-  if (!ready) {
-    showNotice('Could not connect to the page. Reload the DeviantArt tab and try again.', 'err');
+  const url = tab.url || '';
+  state.pageUrl = url;
+  if (!isDeviantArtUrl(url) && !isWixmpImageUrl(url) && !$('#chkAnyPage').checked) {
+    $('#pageMeta').textContent = 'Unsupported page';
+    showNotice('This page is outside DeviantArt. Enable “Find images on any page” to scan it.', 'err');
     return;
   }
-  await scan(false);
+  const ready = await ensureContentScript(tab, false);
+  if (!ready) {
+    showNotice(isWebUrl(url)
+      ? 'Could not access this site. Click Rescan to grant site access.'
+      : 'Chrome does not allow extensions to scan this browser page.', 'err');
+    return;
+  }
+  await scan(false, false);
 })();
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (tabId === state.tabId && tab.url) state.pageUrl = tab.url;
+});

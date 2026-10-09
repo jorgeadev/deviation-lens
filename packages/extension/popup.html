@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>DeviantArt Image Hunter</title>
+  <title>Deviation Lens</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
     <header class="top">
       <img src="icons/icon48.png" alt="" class="logo">
       <div class="titles">
-        <div class="app">DeviantArt Image Hunter</div>
+        <div class="app">Deviation Lens</div>
         <div class="page" id="pageMeta">Scanning the page…</div>
       </div>
     </header>
@@ -27,6 +27,18 @@
       </label>
       <label class="chk" title="Show scaled/cropped thumbnails found in the main view">
         <input type="checkbox" id="chkSmall" checked> Small variants
+      </label>
+    </div>
+
+    <div class="exploreSetting">
+      <label class="chk" title="Include images from Explore Recent Deviations, Explore Community Features, and From Deviants You Watch">
+        <input type="checkbox" id="chkExplore"> Show images from Explore sections
+      </label>
+    </div>
+
+    <div class="exploreSetting">
+      <label class="chk" title="Allow scanning pages outside DeviantArt. Chrome will ask for access to each site when you scan it.">
+        <input type="checkbox" id="chkAnyPage"> Find images on any page
       </label>
     </div>
 
