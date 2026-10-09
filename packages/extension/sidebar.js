@@ -1,3 +1,7 @@
+(() => {
+if (window.__DA_SIDEBAR_LOADED__) return;
+window.__DA_SIDEBAR_LOADED__ = true;
+
 let $ = (s) => document.querySelector(s);
 const state = {
   tabId: null,
@@ -851,3 +855,4 @@ chrome.storage.local.get(SIDEBAR_STATE_KEY).then((stored) => {
   if (st === 'open') mountSidebar(false).catch(() => { });
   else if (st === 'min') mountSidebar(true).catch(() => { });
 }).catch(() => { });
+})();

@@ -1,11 +1,25 @@
 const batches = new Map();
 let batchSeq = 0;
 
-chrome.action.onClicked.addListener(async (tab) => {
-  if (!tab || tab.id == null) return;
+async function toggleSidebarInTab(tabId, forceInject) {
+  if (tabId == null) return { ok: false, error: 'No active tab.' };
+  if (!forceInject) {
+    try {
+      await chrome.tabs.sendMessage(tabId, { type: 'DA_TOGGLE_SIDEBAR' });
+      return { ok: true };
+    } catch (e) { }
+  }
   try {
-    await chrome.tabs.sendMessage(tab.id, { type: 'DA_TOGGLE_SIDEBAR' });
-  } catch (e) { }
+    await chrome.scripting.executeScript({ target: { tabId }, files: ['content.js', 'sidebar.js'] });
+    await chrome.tabs.sendMessage(tabId, { type: 'DA_TOGGLE_SIDEBAR' });
+    return { ok: true, injected: true };
+  } catch (e) {
+    return { ok: false, error: String((e && e.message) || e) };
+  }
+}
+
+chrome.action.onClicked.addListener((tab) => {
+  if (tab && tab.id != null) toggleSidebarInTab(tab.id).catch(() => { });
 });
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -209,5 +223,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     chrome.tabs.create({ url: chrome.runtime.getURL('saver.html') });
     sendResponse({ ok: true });
     return false;
+  }
+  if (msg.type === 'DA_TOGGLE_TAB') {
+    toggleSidebarInTab(msg.tabId, msg.forceInject).then(sendResponse);
+    return true;
   }
 });

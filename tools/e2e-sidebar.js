@@ -47,14 +47,13 @@ async function waitFor(fn, timeout, label, interval) {
     const helper = await browser.newPage();
     await helper.goto(`chrome-extension://${extId}/saver.html`, { waitUntil: 'domcontentloaded' });
     await sleep(500);
-
-    const toggle = () => helper.evaluate(async (url) => {
+    const daTabId = await helper.evaluate(async (url) => {
       const tabs = await new Promise((r) => chrome.tabs.query({ url: '*://*.deviantart.com/*' }, r));
       const tab = tabs.find((t) => t.url === url) || tabs[tabs.length - 1];
-      if (!tab) return { ok: false, error: 'no da tab' };
-      await new Promise((r) => chrome.tabs.sendMessage(tab.id, { type: 'DA_TOGGLE_SIDEBAR' }, r));
-      return { ok: true, tabId: tab.id };
+      return tab ? tab.id : null;
     }, pageUrl);
+    log('da tab id:', daTabId);
+    const toggle = () => helper.evaluate((id) => new Promise((r) => chrome.runtime.sendMessage({ type: 'DA_TOGGLE_TAB', tabId: id }, r)), daTabId);
 
     const opened = await toggle();
     log('toggle open:', JSON.stringify(opened));
@@ -148,6 +147,19 @@ async function waitFor(fn, timeout, label, interval) {
     await sleep(2500);
     const staysClosed = await forest.evaluate(() => !document.getElementById('da-image-hunter-sidebar'));
     log('ASSERT stays closed after reload:', staysClosed);
+
+    log('--- on-demand injection path (used for tabs opened before the extension is loaded) ---');
+    const forced = await helper.evaluate((id) => new Promise((r) => chrome.runtime.sendMessage({ type: 'DA_TOGGLE_TAB', tabId: id, forceInject: true }, r)), daTabId);
+    log('forced inject toggle:', JSON.stringify(forced));
+    log('ASSERT injection path succeeds:', !!(forced && forced.ok && forced.injected));
+    await waitFor(async () => forest.evaluate(() => {
+      const host = document.getElementById('da-image-hunter-sidebar');
+      return !!(host && host.shadowRoot && host.shadowRoot.querySelectorAll('.row').length > 0);
+    }), 30000, 'sidebar rows after forced injection');
+    log('ASSERT panel opens after forced injection');
+    const closedAfterInject = await toggle();
+    await sleep(400);
+    log('ASSERT toggles closed:', JSON.stringify(closedAfterInject), await forest.evaluate(() => !document.getElementById('da-image-hunter-sidebar')));
     log('DONE');
   } catch (e) {
     log('ERROR', (e && e.message) || e);
