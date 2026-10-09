@@ -730,7 +730,45 @@ chrome.runtime.onMessage.addListener((msg) => {
 
 const SIDEBAR_HOST_ID = 'da-image-hunter-sidebar';
 const SIDEBAR_STATE_KEY = 'sidebarState';
+const PAGE_SCROLL_STYLE_ID = 'dah-page-scrollbar-style';
 let sidebarInited = false;
+let lastHref = location.href;
+let navTimer = null;
+
+function hidePageScrollbar() {
+  if (document.getElementById(PAGE_SCROLL_STYLE_ID)) return;
+  const styleEl = document.createElement('style');
+  styleEl.id = PAGE_SCROLL_STYLE_ID;
+  styleEl.textContent = 'html{scrollbar-width:none !important;}html::-webkit-scrollbar{display:none !important;width:0 !important;height:0 !important;}';
+  (document.head || document.documentElement).appendChild(styleEl);
+}
+
+function restorePageScrollbar() {
+  const el = document.getElementById(PAGE_SCROLL_STYLE_ID);
+  if (el) el.remove();
+}
+
+function unmountSidebar(host) {
+  host.remove();
+  restorePageScrollbar();
+  saveSidebarState('closed');
+}
+
+function scheduleRescan() {
+  clearTimeout(navTimer);
+  navTimer = setTimeout(() => {
+    const host = document.getElementById(SIDEBAR_HOST_ID);
+    if (!host) return;
+    scan(false).catch(() => { });
+  }, 1500);
+}
+
+setInterval(() => {
+  if (location.href !== lastHref) {
+    lastHref = location.href;
+    scheduleRescan();
+  }
+}, 1000);
 
 function saveSidebarState(value) {
   try {
@@ -798,10 +836,7 @@ async function mountSidebar(minimized) {
     top.appendChild(min);
     top.appendChild(close);
     min.addEventListener('click', () => setMinimized(host, true));
-    close.addEventListener('click', () => {
-      host.remove();
-      saveSidebarState('closed');
-    });
+    close.addEventListener('click', () => unmountSidebar(host));
   }
 
   const tab = document.createElement('button');
@@ -819,6 +854,7 @@ async function mountSidebar(minimized) {
   root.appendChild(tab);
 
   document.documentElement.appendChild(host);
+  hidePageScrollbar();
   $ = (s) => root.querySelector(s);
   if (!sidebarInited) {
     sidebarInited = true;
@@ -837,8 +873,7 @@ function toggleSidebar() {
       setMinimized(existing, false);
       return Promise.resolve();
     }
-    existing.remove();
-    saveSidebarState('closed');
+    unmountSidebar(existing);
     return Promise.resolve();
   }
   return mountSidebar(false);

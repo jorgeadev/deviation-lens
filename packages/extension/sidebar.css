@@ -3,6 +3,8 @@
   max-height: none;
   border-radius: 0;
   box-shadow: -10px 0 30px rgba(0, 0, 0, .55);
+  color: var(--text);
+  font: 13px/1.4 "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
 .sidebarTopBtn {

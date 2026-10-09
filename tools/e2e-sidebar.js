@@ -100,6 +100,23 @@ async function waitFor(fn, timeout, label, interval) {
     log('ASSERT fixed right overlay:', metrics.position === 'fixed' && metrics.right === '0px' && metrics.top === '0px');
     log('ASSERT content rendered:', metrics.rows > 0 && /asset/.test(metrics.count));
     log('ASSERT assets loaded in shadow:', metrics.logoLoaded);
+    const scrollFix = await forest.evaluate(() => {
+      const el = document.getElementById('dah-page-scrollbar-style');
+      return {
+        injected: !!el,
+        hidesPageScrollbar: el ? /scrollbar-width:\s*none/.test(el.textContent) : false,
+        computed: getComputedStyle(document.documentElement).scrollbarWidth
+      };
+    });
+    log('page scrollbar fix:', JSON.stringify(scrollFix));
+    log('ASSERT page scrollbar hidden while panel open:', scrollFix.injected && scrollFix.hidesPageScrollbar);
+    const dimsColor = await forest.evaluate(() => {
+      const root = document.getElementById('da-image-hunter-sidebar').shadowRoot;
+      const dims = root.querySelector('.row .dims');
+      return dims ? getComputedStyle(dims).color : null;
+    });
+    log('dimension text color:', dimsColor);
+    log('ASSERT dimension text is light (not black):', dimsColor === 'rgb(232, 237, 242)');
     await forest.screenshot({ path: path.join(OUT, 'sidebar_panel.png') });
 
     await forest.evaluate(() => {
@@ -132,6 +149,24 @@ async function waitFor(fn, timeout, label, interval) {
     log('restored:', JSON.stringify(restored));
     log('ASSERT toggle expands minimized panel:', !!restored && !restored.min && restored.width === '600px');
 
+    log('--- SPA navigation rescan ---');
+    const metaBefore = await forest.evaluate(() => document.getElementById('da-image-hunter-sidebar').shadowRoot.querySelector('#pageMeta').textContent);
+    const originalPath = await forest.evaluate(() => location.pathname);
+    await forest.evaluate(() => {
+      history.pushState({}, '', `${location.pathname}-probe`);
+      const h1 = document.querySelector('h1');
+      if (h1) h1.textContent = 'Rescan Probe Title';
+    });
+    await waitFor(async () => {
+      const meta = await forest.evaluate(() => {
+        const host = document.getElementById('da-image-hunter-sidebar');
+        return host ? host.shadowRoot.querySelector('#pageMeta').textContent : '';
+      });
+      return meta.includes('Rescan Probe Title') ? meta : null;
+    }, 20000, 'sidebar rescan after SPA navigation', 1000);
+    log('ASSERT sidebar rescanned on URL change (was:', metaBefore, ')');
+    await forest.evaluate((path) => history.pushState({}, '', path), originalPath);
+
     await forest.reload({ waitUntil: 'networkidle2', timeout: 90000 });
     await forest.bringToFront();
     await waitFor(async () => forest.evaluate(() => !!document.getElementById('da-image-hunter-sidebar')), 20000, 'auto-mounted sidebar after reload');
@@ -140,8 +175,10 @@ async function waitFor(fn, timeout, label, interval) {
     const closed = await toggle();
     await sleep(500);
     const gone = await forest.evaluate(() => !document.getElementById('da-image-hunter-sidebar'));
+    const scrollRestored = await forest.evaluate(() => !document.getElementById('dah-page-scrollbar-style'));
     log('toggle close:', JSON.stringify(closed));
     log('ASSERT sidebar removed on close:', gone);
+    log('ASSERT page scrollbar style removed on close:', scrollRestored);
 
     await forest.reload({ waitUntil: 'networkidle2', timeout: 90000 });
     await sleep(2500);
