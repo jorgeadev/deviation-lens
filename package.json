@@ -1,0 +1,17 @@
+{
+  "name": "deviantart-image-hunter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Monorepo for the DeviantArt Image Hunter browser extension and future apps.",
+  "workspaces": [
+    "packages/*",
+    "tools"
+  ],
+  "scripts": {
+    "check": "node --check packages/extension/background.js && node --check packages/extension/content.js && node --check packages/extension/popup.js && node --check packages/extension/saver.js",
+    "test:smoke": "node tools/check-fs.js",
+    "test:e2e": "node tools/e2e.js",
+    "test:profile": "node tools/e2e-profile.js",
+    "test:visual": "node tools/visual-popup.js"
+  }
+}

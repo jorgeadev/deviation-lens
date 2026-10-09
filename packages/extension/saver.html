@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DeviantArt Image Hunter — Download folder</title>
+  <link rel="stylesheet" href="popup.css">
+  <link rel="stylesheet" href="saver.css">
+</head>
+<body class="saverPage">
+  <div class="saverCard">
+    <header class="top">
+      <img src="icons/icon48.png" alt="" class="logo">
+      <div class="titles">
+        <div class="app">DeviantArt Image Hunter</div>
+        <div class="page">Download folder</div>
+      </div>
+    </header>
+
+  <main class="saverMain">
+    <p class="saverCurrent">Saving to: <b id="curMode">Default</b></p>
+
+    <div class="modeList">
+      <label class="modeItem">
+        <input type="radio" name="mode" value="default">
+        <span>
+          <b>Browser default</b>
+          <small>Downloads\DeviantArt — no dialogs, names are made unique automatically.</small>
+        </span>
+      </label>
+      <label class="modeItem">
+        <input type="radio" name="mode" value="custom">
+        <span>
+          <b>Custom folder: <span id="folderName">none</span></b>
+          <small>The extension writes files straight into the folder you pick. No Save dialogs.</small>
+        </span>
+      </label>
+      <label class="modeItem">
+        <input type="radio" name="mode" value="ask">
+        <span>
+          <b>Ask every time</b>
+          <small>A native Save As dialog opens for every download.</small>
+        </span>
+      </label>
+    </div>
+
+    <div class="saverRow">
+      <button id="btnPick" class="btn primary">Choose folder…</button>
+      <button id="btnGrant" class="btn hidden">Connect folder again</button>
+      <button id="btnDefault" class="btn">Use browser default</button>
+      <button id="btnShow" class="btn ghost">Open Downloads folder</button>
+      <button id="btnSettings" class="btn ghost">Browser download settings</button>
+    </div>
+
+    <div id="fsNote" class="saverNote hidden">
+      Direct folder writing is not available in this browser: the File System Access API is missing or disabled by a
+      flag/policy. Use <b>Ask every time</b> to choose a folder per download, or change your browser's download folder
+      with <b>Browser download settings</b> and keep <b>Browser default</b> — files are then saved into a
+      <b>DeviantArt</b> subfolder inside it.
+    </div>
+
+    <div id="status" class="saverStatus"></div>
+  </main>
+  </div>
+
+  <script src="saver.js"></script>
+</body>
+</html>

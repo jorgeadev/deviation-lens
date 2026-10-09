@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "DeviantArt Image Hunter",
+  "version": "1.0.0",
+  "description": "Lists the images in the main view of any DeviantArt page with dimensions and file size, and downloads them at the best quality the source offers - including the artist's original file when a download button exists.",
+  "minimum_chrome_version": "112",
+  "action": {
+    "default_title": "DeviantArt Image Hunter",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["scripting", "downloads", "storage"],
+  "host_permissions": ["*://*.deviantart.com/*", "*://*.wixmp.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["*://*.deviantart.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

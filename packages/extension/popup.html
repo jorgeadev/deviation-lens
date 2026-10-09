@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DeviantArt Image Hunter</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="app">
+    <header class="top">
+      <img src="icons/icon48.png" alt="" class="logo">
+      <div class="titles">
+        <div class="app">DeviantArt Image Hunter</div>
+        <div class="page" id="pageMeta">Scanning the page…</div>
+      </div>
+    </header>
+
+    <div class="toolbar">
+      <button id="btnRescan" class="btn">Rescan</button>
+      <button id="btnReveal" class="btn" title="Clicks the artwork on the page so DeviantArt reveals the full-resolution viewer image">Reveal full</button>
+      <button id="btnFolder" class="btn folderBtn" title="Choose where downloads are saved">
+        <span class="folderIcon"></span><span id="folderLabel">Folder: Default</span>
+      </button>
+      <label class="chk" id="chkBestWrap" title="Show only the best image of every artwork found on this page">
+        <input type="checkbox" id="chkBest"> Best only
+      </label>
+      <label class="chk" title="Show scaled/cropped thumbnails found in the main view">
+        <input type="checkbox" id="chkSmall" checked> Small variants
+      </label>
+    </div>
+
+    <details id="rangeBox" class="rangeBox hidden">
+      <summary>Download profile by date range</summary>
+      <div class="rangeBody">
+        <div class="rangeRow">
+          <label class="rangeLabel">From <input type="date" id="rangeFrom"></label>
+          <label class="rangeLabel">To <input type="date" id="rangeTo"></label>
+          <button id="btnRangeScan" class="btn">Scan range</button>
+        </div>
+        <div id="rangeStatus" class="rangeStatus"></div>
+        <div class="rangeRow">
+          <button id="btnRangeDownload" class="btn primary" disabled>Download</button>
+          <button id="btnRangeCopy" class="btn ghost" disabled>Copy URLs</button>
+        </div>
+      </div>
+    </details>
+
+    <div id="notice" class="notice hidden"></div>
+    <div id="summary" class="summary hidden"></div>
+
+    <ul id="list" class="list"></ul>
+
+    <footer class="bottom">
+      <div class="actions">
+        <button id="btnBest" class="btn primary">Download best</button>
+        <button id="btnSelected" class="btn">Download selected</button>
+        <button id="btnAll" class="btn">Download all</button>
+        <button id="btnCopy" class="btn ghost">Copy URLs</button>
+      </div>
+      <div id="progress" class="progress hidden"></div>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
