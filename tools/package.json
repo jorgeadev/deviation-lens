@@ -1,15 +1,16 @@
 {
-  "name": "tools",
+  "name": "@dah/tools",
   "version": "1.0.0",
-  "description": "",
-  "main": "probe.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "private": true,
+  "description": "Research and E2E tooling for the DeviantArt Image Hunter extension (Chrome for Testing + puppeteer-core).",
   "type": "commonjs",
+  "scripts": {
+    "smoke": "node check-fs.js",
+    "e2e": "node e2e.js",
+    "e2e:profile": "node e2e-profile.js",
+    "e2e:visual": "node visual-popup.js",
+    "icons": "pwsh -NoProfile -File make-icons.ps1"
+  },
   "dependencies": {
     "puppeteer-core": "^25.13.0"
   }
