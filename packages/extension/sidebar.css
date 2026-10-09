@@ -1,0 +1,29 @@
+#app {
+  height: 100%;
+  max-height: none;
+  border-radius: 0;
+  box-shadow: -10px 0 30px rgba(0, 0, 0, .55);
+}
+
+.sidebarClose {
+  margin-left: auto;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--muted);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+}
+
+.sidebarClose:hover {
+  color: var(--text);
+  border-color: #3a4756;
+}

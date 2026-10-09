@@ -737,6 +737,8 @@
     }
   }
 
+  window.__DA_API = { scan: scanMainWindow, deepScan, profileScan };
+
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (!msg || typeof msg !== 'object') return;
     if (msg.type === 'DA_PING') {

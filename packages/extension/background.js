@@ -1,6 +1,13 @@
 const batches = new Map();
 let batchSeq = 0;
 
+chrome.action.onClicked.addListener(async (tab) => {
+  if (!tab || tab.id == null) return;
+  try {
+    await chrome.tabs.sendMessage(tab.id, { type: 'DA_TOGGLE_SIDEBAR' });
+  } catch (e) { }
+});
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function sanitize(name) {
@@ -196,6 +203,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
   if (msg.type === 'DA_BATCH_STATUS') {
     sendResponse(batches.get(msg.batchId) || null);
+    return false;
+  }
+  if (msg.type === 'DA_OPEN_SAVER') {
+    chrome.tabs.create({ url: chrome.runtime.getURL('saver.html') });
+    sendResponse({ ok: true });
     return false;
   }
 });
