@@ -5,3 +5,4 @@ tools/out/
 .DS_Store
 tools/*.txt
 tools/probe*.json
+pnpm-debug.log*

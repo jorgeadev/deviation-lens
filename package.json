@@ -2,16 +2,13 @@
   "name": "deviantart-image-hunter",
   "version": "0.1.0",
   "private": true,
-  "description": "Monorepo for the DeviantArt Image Hunter browser extension and future apps.",
-  "workspaces": [
-    "packages/*",
-    "tools"
-  ],
+  "description": "pnpm monorepo for the DeviantArt Image Hunter browser extension and future apps.",
+  "packageManager": "pnpm@12.9.1",
   "scripts": {
-    "check": "node --check packages/extension/background.js && node --check packages/extension/content.js && node --check packages/extension/popup.js && node --check packages/extension/saver.js",
-    "test:smoke": "node tools/check-fs.js",
-    "test:e2e": "node tools/e2e.js",
-    "test:profile": "node tools/e2e-profile.js",
-    "test:visual": "node tools/visual-popup.js"
+    "check": "pnpm --filter @dah/extension run check",
+    "test:smoke": "pnpm --filter @dah/tools run smoke",
+    "test:e2e": "pnpm --filter @dah/tools run e2e",
+    "test:e2e:profile": "pnpm --filter @dah/tools run e2e:profile",
+    "test:visual": "pnpm --filter @dah/tools run e2e:visual"
   }
 }
