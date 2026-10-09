@@ -136,7 +136,10 @@ function visibleImages() {
 function updateActionLabels() {
   const visible = visibleImages();
   const checked = visible.filter(({ img }) => state.selected.has(img.url));
-  $('#btnSelected').textContent = `Download selected (${checked.length})`;
+  const selBtn = $('#btnSelected');
+  const selLbl = selBtn && selBtn.querySelector('.lbl');
+  if (selLbl) selLbl.textContent = `Selected (${checked.length})`;
+  else if (selBtn) selBtn.textContent = `Download selected (${checked.length})`;
   $('#btnSelected').disabled = state.busy || checked.length === 0;
   $('#btnAll').disabled = state.busy || visible.length === 0;
   const hasBest = pickBest().length > 0;
@@ -722,13 +725,46 @@ chrome.runtime.onMessage.addListener((msg) => {
 });
 
 const SIDEBAR_HOST_ID = 'da-image-hunter-sidebar';
+const SIDEBAR_STATE_KEY = 'sidebarState';
 let sidebarInited = false;
 
-async function mountSidebar() {
+function saveSidebarState(value) {
+  try {
+    chrome.storage.local.set({ [SIDEBAR_STATE_KEY]: value });
+  } catch (e) { }
+}
+
+function setMinimized(host, minimized) {
+  host.classList.toggle('dah-min', minimized);
+  host.style.width = minimized ? '46px' : '600px';
+  saveSidebarState(minimized ? 'min' : 'open');
+}
+
+function decorateFooter(root) {
+  const defs = {
+    btnBest: { label: 'Best', paths: ['m12 3.5 2.4 5.1 5.6.7-4.2 3.9 1.1 5.6L12 16.1 7.1 18.8l1.1-5.6L4 9.3l5.6-.7z'] },
+    btnSelected: { label: 'Selected', paths: ['M9 11l3 3 8-9', 'M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h11'] },
+    btnAll: { label: 'All', paths: ['M12 4v11', 'm7 10 5 5 5-5', 'M5 20h14'] },
+    btnCopy: { label: 'URLs', paths: ['M9 9h10v10H9z', 'M5 15V5h10'] }
+  };
+  Object.entries(defs).forEach(([id, def]) => {
+    const btn = root.getElementById(id);
+    if (!btn) return;
+    btn.textContent = '';
+    btn.appendChild(svgIcon(def.paths));
+    const lbl = document.createElement('span');
+    lbl.className = 'lbl';
+    lbl.textContent = def.label;
+    btn.appendChild(lbl);
+  });
+}
+
+async function mountSidebar(minimized) {
   if (document.getElementById(SIDEBAR_HOST_ID)) return;
   const host = document.createElement('div');
   host.id = SIDEBAR_HOST_ID;
-  host.style.cssText = 'position:fixed;top:0;right:0;width:600px;height:100vh;z-index:2147483647;';
+  if (minimized) host.classList.add('dah-min');
+  host.style.cssText = `position:fixed;top:0;right:0;width:${minimized ? 46 : 600}px;height:100vh;z-index:2147483647;transition:width .18s ease;`;
   const root = host.attachShadow({ mode: 'open' });
   const [css, sidebarCss, markup] = await Promise.all([
     fetch(chrome.runtime.getURL('popup.css')).then((r) => r.text()),
@@ -744,18 +780,46 @@ async function mountSidebar() {
   root.appendChild(app);
   const logo = root.querySelector('.logo');
   if (logo) logo.src = chrome.runtime.getURL('icons/icon48.png');
-  const close = document.createElement('button');
-  close.className = 'sidebarClose';
-  close.title = 'Close panel';
-  close.textContent = '\u2715';
+
   const top = root.querySelector('.top');
-  if (top) top.appendChild(close);
-  close.addEventListener('click', () => host.remove());
+  if (top) {
+    const min = document.createElement('button');
+    min.className = 'sidebarTopBtn sidebarMin';
+    min.title = 'Minimize panel';
+    min.textContent = '\u2013';
+    const close = document.createElement('button');
+    close.className = 'sidebarTopBtn sidebarClose';
+    close.title = 'Close panel';
+    close.textContent = '\u2715';
+    top.appendChild(min);
+    top.appendChild(close);
+    min.addEventListener('click', () => setMinimized(host, true));
+    close.addEventListener('click', () => {
+      host.remove();
+      saveSidebarState('closed');
+    });
+  }
+
+  const tab = document.createElement('button');
+  tab.className = 'sidebarTab';
+  tab.title = 'Open DeviantArt Image Hunter';
+  const tabLogo = document.createElement('img');
+  tabLogo.src = chrome.runtime.getURL('icons/icon48.png');
+  tabLogo.alt = '';
+  const chev = document.createElement('span');
+  chev.className = 'sidebarTabChev';
+  chev.textContent = '\u2039';
+  tab.appendChild(chev);
+  tab.appendChild(tabLogo);
+  tab.addEventListener('click', () => setMinimized(host, false));
+  root.appendChild(tab);
+
   document.documentElement.appendChild(host);
   $ = (s) => root.querySelector(s);
   if (!sidebarInited) {
     sidebarInited = true;
     bindUi();
+    decorateFooter(root);
     initFolderButton();
     await initBestOnly();
     await scan(false);
@@ -765,10 +829,15 @@ async function mountSidebar() {
 function toggleSidebar() {
   const existing = document.getElementById(SIDEBAR_HOST_ID);
   if (existing) {
+    if (existing.classList.contains('dah-min')) {
+      setMinimized(existing, false);
+      return Promise.resolve();
+    }
     existing.remove();
+    saveSidebarState('closed');
     return Promise.resolve();
   }
-  return mountSidebar();
+  return mountSidebar(false);
 }
 
 chrome.runtime.onMessage.addListener((msg) => {
@@ -776,3 +845,9 @@ chrome.runtime.onMessage.addListener((msg) => {
     toggleSidebar().catch(() => { });
   }
 });
+
+chrome.storage.local.get(SIDEBAR_STATE_KEY).then((stored) => {
+  const st = stored && stored[SIDEBAR_STATE_KEY];
+  if (st === 'open') mountSidebar(false).catch(() => { });
+  else if (st === 'min') mountSidebar(true).catch(() => { });
+}).catch(() => { });

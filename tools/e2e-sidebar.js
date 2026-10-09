@@ -58,6 +58,7 @@ async function waitFor(fn, timeout, label, interval) {
 
     const opened = await toggle();
     log('toggle open:', JSON.stringify(opened));
+    await forest.bringToFront();
 
     await waitFor(async () => {
       const ready = await forest.evaluate(() => {
@@ -102,11 +103,51 @@ async function waitFor(fn, timeout, label, interval) {
     log('ASSERT assets loaded in shadow:', metrics.logoLoaded);
     await forest.screenshot({ path: path.join(OUT, 'sidebar_panel.png') });
 
+    await forest.evaluate(() => {
+      const root = document.getElementById('da-image-hunter-sidebar').shadowRoot;
+      root.querySelector('.sidebarMin').click();
+    });
+    await sleep(500);
+    const minState = await forest.evaluate(() => {
+      const host = document.getElementById('da-image-hunter-sidebar');
+      const root = host.shadowRoot;
+      const app = root.getElementById('app');
+      const tab = root.querySelector('.sidebarTab');
+      return {
+        min: host.classList.contains('dah-min'),
+        width: getComputedStyle(host).width,
+        appHidden: getComputedStyle(app).display === 'none',
+        tabShown: getComputedStyle(tab).display !== 'none'
+      };
+    });
+    log('minimized:', JSON.stringify(minState));
+    log('ASSERT minimizes to edge tab:', minState.min && minState.width === '46px' && minState.appHidden && minState.tabShown);
+    await forest.screenshot({ path: path.join(OUT, 'sidebar_minimized.png') });
+
+    await toggle();
+    await sleep(500);
+    const restored = await forest.evaluate(() => {
+      const host = document.getElementById('da-image-hunter-sidebar');
+      return host ? { min: host.classList.contains('dah-min'), width: getComputedStyle(host).width } : null;
+    });
+    log('restored:', JSON.stringify(restored));
+    log('ASSERT toggle expands minimized panel:', !!restored && !restored.min && restored.width === '600px');
+
+    await forest.reload({ waitUntil: 'networkidle2', timeout: 90000 });
+    await forest.bringToFront();
+    await waitFor(async () => forest.evaluate(() => !!document.getElementById('da-image-hunter-sidebar')), 20000, 'auto-mounted sidebar after reload');
+    log('ASSERT panel state persisted across navigation (auto-open)');
+
     const closed = await toggle();
-    await sleep(600);
+    await sleep(500);
     const gone = await forest.evaluate(() => !document.getElementById('da-image-hunter-sidebar'));
     log('toggle close:', JSON.stringify(closed));
-    log('ASSERT sidebar removed on second click:', gone);
+    log('ASSERT sidebar removed on close:', gone);
+
+    await forest.reload({ waitUntil: 'networkidle2', timeout: 90000 });
+    await sleep(2500);
+    const staysClosed = await forest.evaluate(() => !document.getElementById('da-image-hunter-sidebar'));
+    log('ASSERT stays closed after reload:', staysClosed);
     log('DONE');
   } catch (e) {
     log('ERROR', (e && e.message) || e);

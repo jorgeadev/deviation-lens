@@ -9,6 +9,7 @@
     "e2e": "node e2e.js",
     "e2e:profile": "node e2e-profile.js",
     "e2e:visual": "node visual-popup.js",
+    "e2e:sidebar": "node e2e-sidebar.js",
     "icons": "pwsh -NoProfile -File make-icons.ps1"
   },
   "dependencies": {

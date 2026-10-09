@@ -9,6 +9,7 @@
     "test:smoke": "pnpm --filter @dah/tools run smoke",
     "test:e2e": "pnpm --filter @dah/tools run e2e",
     "test:e2e:profile": "pnpm --filter @dah/tools run e2e:profile",
-    "test:visual": "pnpm --filter @dah/tools run e2e:visual"
+    "test:visual": "pnpm --filter @dah/tools run e2e:visual",
+    "test:sidebar": "pnpm --filter @dah/tools run e2e:sidebar"
   }
 }
