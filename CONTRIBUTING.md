@@ -6,10 +6,10 @@ Contributions are welcome through GitHub issues and pull requests. Open an issue
 
 1. Install the pinned package manager with Corepack if needed.
 2. Run corepack pnpm install from the repository root.
-3. Load packages/extension as an unpacked extension in a Chromium browser.
+3. Load apps/extension as an unpacked extension in a Chromium browser.
 4. Run the relevant checks listed in the root package.json before opening a pull request.
 
-Browser-driven checks may require local browser files under tools/browsers/. Generated browser files and output are not part of the source contribution.
+Browser-driven checks may require local browser files under packages/tools/browsers/. Generated browser files and output are not part of the source contribution.
 
 ## Branches and pull requests
 

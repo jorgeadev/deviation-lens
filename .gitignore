@@ -1,7 +1,7 @@
 # Dependencies and local browser tooling
 node_modules/
-tools/browsers/
-tools/out/
+packages/tools/browsers/
+packages/tools/out/
 
 # Secrets and local configuration
 .env
@@ -14,11 +14,9 @@ pnpm-debug.log*
 .DS_Store
 Thumbs.db
 desktop.ini
-tools/*.txt
-tools/probe*.json
 
 # Generated release archives; rebuild these from tracked source
-publish/packages/*.zip
+apps/web/downloads/*.zip
 
 # Local build and test output
 dist/

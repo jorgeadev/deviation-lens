@@ -1,0 +1,67 @@
+<div id="app">
+  <header class="top">
+    <img src="icons/icon48.png" alt="" class="logo">
+    <div class="titles">
+      <div class="app-title"><div class="app">Deviation Lens</div><span class="app-version" title="Version 0.1.0-alpha.1">0.1.0-alpha.1</span></div>
+      <div class="page" id="pageMeta">Scanning the page…</div>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <button type="button" id="btnRescan" class="btn">Rescan</button>
+    <button type="button" id="btnReveal" class="btn" title="Clicks the artwork on the page so DeviantArt reveals the full-resolution viewer image">Reveal full</button>
+    <button type="button" id="btnFolder" class="btn folderBtn" title="Choose where downloads are saved">
+      <span class="folderIcon"></span><span id="folderLabel">Folder: Default</span>
+    </button>
+    <label class="chk" id="chkBestWrap" title="Show only the best image of every artwork found on this page">
+      <input type="checkbox" id="chkBest"> Best only
+    </label>
+    <label class="chk" title="Show scaled/cropped thumbnails found in the main view">
+      <input type="checkbox" id="chkSmall" checked> Small variants
+    </label>
+  </div>
+
+  <fieldset class="scanSettings">
+    <legend>Image scan settings</legend>
+    <div class="exploreSetting">
+      <label class="scanOption" title="Include Explore Recent Deviations, Explore Community Features, and From Deviants You Watch">
+        <input type="checkbox" id="chkExplore">
+        <span class="settingCopy">
+          <span class="settingTitle">Include Explore sections</span>
+          <span class="settingDescription">Recent Deviations, Community Features, and posts from deviants you watch.</span>
+        </span>
+      </label>
+    </div>
+  </fieldset>
+
+  <details id="rangeBox" class="rangeBox hidden">
+    <summary>Download profile by date range</summary>
+    <div class="rangeBody">
+      <div class="rangeRow">
+        <label class="rangeLabel">From <input type="date" id="rangeFrom"></label>
+        <label class="rangeLabel">To <input type="date" id="rangeTo"></label>
+        <button type="button" id="btnRangeScan" class="btn">Scan range</button>
+      </div>
+      <div id="rangeStatus" class="rangeStatus"></div>
+      <div class="rangeRow">
+        <button type="button" id="btnRangeDownload" class="btn primary" disabled>Download</button>
+        <button type="button" id="btnRangeCopy" class="btn ghost" disabled>Copy URLs</button>
+      </div>
+    </div>
+  </details>
+
+  <div id="notice" class="notice hidden"></div>
+  <div id="summary" class="summary hidden"></div>
+
+  <ul id="list" class="list"></ul>
+
+  <footer class="bottom">
+    <div class="actions">
+      <button type="button" id="btnBest" class="btn primary">Download best</button>
+      <button type="button" id="btnSelected" class="btn">Download selected</button>
+      <button type="button" id="btnAll" class="btn">Download all</button>
+      <button type="button" id="btnCopy" class="btn ghost">Copy URLs</button>
+    </div>
+    <div id="progress" class="progress hidden"></div>
+  </footer>
+</div>

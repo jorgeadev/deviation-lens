@@ -1,15 +1,24 @@
 {
-  "name": "deviation-lens",
-  "version": "0.1.0-alpha.1",
-  "private": true,
-  "description": "pnpm monorepo for the Deviation Lens browser extension and future apps.",
-  "packageManager": "pnpm@12.9.1",
-  "scripts": {
-    "check": "pnpm --filter @deviation-lens/extension run check",
-    "test:smoke": "pnpm --filter @deviation-lens/tools run smoke",
-    "test:e2e": "pnpm --filter @deviation-lens/tools run e2e",
-    "test:e2e:profile": "pnpm --filter @deviation-lens/tools run e2e:profile",
-    "test:visual": "pnpm --filter @deviation-lens/tools run e2e:visual",
-    "test:sidebar": "pnpm --filter @deviation-lens/tools run e2e:sidebar"
-  }
+	"name": "deviation-lens",
+	"version": "0.1.0-alpha.1",
+	"private": true,
+	"description": "pnpm monorepo for the Deviation Lens extension, product site, and project tooling.",
+	"packageManager": "pnpm@12.9.1",
+	"scripts": {
+		"check": "pnpm --filter @deviation-lens/extension run check",
+		"format": "pnpm exec biome format --write .",
+		"format:check": "pnpm exec biome format .",
+		"lint": "pnpm exec biome lint .",
+		"check:biome": "pnpm exec biome check .",
+		"pack:extension": "node packages/tools/scripts/release/pack-extension.mjs",
+		"publish:extension": "pnpm run pack:extension",
+		"test:smoke": "pnpm --filter @deviation-lens/tools run smoke",
+		"test:e2e": "pnpm --filter @deviation-lens/tools run e2e",
+		"test:e2e:profile": "pnpm --filter @deviation-lens/tools run e2e:profile",
+		"test:visual": "pnpm --filter @deviation-lens/tools run e2e:visual",
+		"test:sidebar": "pnpm --filter @deviation-lens/tools run e2e:sidebar"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.5.15"
+	}
 }

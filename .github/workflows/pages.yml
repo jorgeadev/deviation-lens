@@ -4,7 +4,10 @@ on:
   push:
     branches: [main]
     paths:
-      - "publish/web/**"
+      - "apps/web/**"
+      - "package.json"
+      - "apps/extension/**"
+      - "packages/tools/scripts/release/pack-extension.mjs"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -28,10 +31,12 @@ jobs:
         uses: actions/checkout@v6
       - name: Configure Pages
         uses: actions/configure-pages@v5
+      - name: Package versioned extension download
+        run: node packages/tools/scripts/release/pack-extension.mjs
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: publish/web
+          path: apps/web
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
