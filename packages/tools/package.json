@@ -1,0 +1,18 @@
+{
+	"name": "@deviation-lens/tools",
+	"version": "0.1.0-alpha.1",
+	"private": true,
+	"description": "Research and E2E tooling for the Deviation Lens extension (Chrome for Testing + puppeteer-core).",
+	"type": "commonjs",
+	"scripts": {
+		"smoke": "node scripts/checks/check-fs.js",
+		"e2e": "node scripts/e2e/e2e.js",
+		"e2e:profile": "node scripts/e2e/e2e-profile.js",
+		"e2e:visual": "node scripts/e2e/visual-popup.js",
+		"e2e:sidebar": "node scripts/e2e/e2e-sidebar.js",
+		"icons": "pwsh -NoProfile -File scripts/assets/make-icons.ps1"
+	},
+	"dependencies": {
+		"puppeteer-core": "^25.13.0"
+	}
+}

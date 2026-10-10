@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f8fa">
+  <meta name="description" content="Find image variants, compare quality, and save artwork with Deviation Lens. A free, open source browser extension for DeviantArt.">
+  <meta property="og:title" content="Deviation Lens — See the image. Choose the file.">
+  <meta property="og:description" content="An image discovery sidebar for DeviantArt. Compare dimensions and formats, filter Explore sections, and download your selection.">
+  <meta property="og:image" content="assets/store-promo-small.png">
+  <meta property="og:type" content="website">
+  <title>Deviation Lens — See the image. Choose the file.</title>
+  <link rel="icon" type="image/png" href="assets/icon48.png">
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand" href="index.html" aria-label="Deviation Lens home"><img src="assets/icon48.png" alt="" width="36" height="36"><span class="brand-name">Deviation Lens</span><span class="brand-version" title="Version 0.1.0-alpha.1">0.1.0-alpha.1</span></a>
+    <button type="button" class="menu-toggle" aria-expanded="false" aria-controls="main-nav" aria-label="Open navigation"><span></span><span></span></button>
+    <nav id="main-nav" aria-label="Main navigation"><a href="#features">Features</a><a href="#how-it-works">How it works</a><a href="#questions">FAQ</a><a class="nav-cta" href="#install">Get the extension</a></nav>
+  </header>
+  <main id="main">
+    <section class="hero section-shell">
+      <div class="hero-copy">
+        <p class="availability"><span aria-hidden="true"></span>Free &amp; open source</p>
+        <h1>See the image.<br>Choose the file.</h1>
+        <p class="lede">Bring artwork and its image files into the same view. Find the available versions, compare their quality, and save the ones you want.</p>
+        <div class="hero-actions"><a class="button button-primary store-link" href="#install">Get Deviation Lens <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v12m-5-5 5 5 5-5M5 20h14"/></svg></a><a class="button button-quiet" href="https://github.com/jorgeadev/deviation-lens" target="_blank" rel="noopener noreferrer">View on GitHub</a></div>
+        <p class="hero-note">For Chrome and compatible Chromium browsers.<br>Early alpha. Built independently of DeviantArt.</p>
+      </div>
+      <div class="demo-wrap">
+        <div class="demo-intro"><span>Take the sidebar for a spin</span><span class="demo-label">Interactive preview</span></div>
+        <div class="product-frame">
+          <div class="frame-bar"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span><div class="address-bar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11V7a5 5 0 0 1 10 0v4M5 11h14v10H5z"/></svg>deviantart.com</div></div>
+          <div class="demo-toolbar"><div class="scene-tabs"><button type="button" class="scene-tab active" data-scene="gallery" aria-pressed="true">Gallery</button><button type="button" class="scene-tab" data-scene="artwork" aria-pressed="false">Artwork</button></div><button type="button" id="demo-sidebar-toggle" class="demo-tool" aria-expanded="true" aria-controls="demo-aside">Close sidebar</button></div>
+          <div class="demo-stage" id="demo-stage">
+            <div class="demo-page">
+              <div class="gallery-heading"><span class="page-avatar"></span><div><b>A little inspiration</b><span>Sample artwork</span></div></div>
+              <div class="gallery-grid"><figure class="sample-art"><img src="assets/forest.svg" alt="Illustration of a quiet forest lake" width="640" height="480"><figcaption>Still water</figcaption></figure><figure class="sample-art"><img src="assets/mountains.svg" alt="Illustration of mountains at sunrise" width="640" height="480"><figcaption>First light</figcaption></figure><figure class="sample-art wide"><img src="assets/coast.svg" alt="Illustration of a sunlit coastline" width="640" height="480"><figcaption>Along the coast</figcaption></figure></div>
+              <div class="demo-explore"><p>Explore Recent Deviations <span id="explore-state">Excluded from results</span></p><div class="explore-thumbs"><img src="assets/mountains.svg" alt="" width="640" height="480"><img src="assets/forest.svg" alt="" width="640" height="480"><img src="assets/coast.svg" alt="" width="640" height="480"></div></div>
+            </div>
+            <aside class="demo-aside" id="demo-aside" aria-label="Extension preview">
+              <div class="panel-brand"><img src="assets/icon48.png" alt="" width="28" height="28"><div><b>Deviation Lens</b><span class="panel-version">0.1.0-alpha.1</span></div><button type="button" id="demo-close" aria-label="Close preview sidebar" class="demo-close">×</button></div>
+              <div class="demo-filter"><label><input id="demo-explore" type="checkbox"><span>Include Explore sections<small>Add their images to these results</small></span></label></div>
+              <div class="result-summary" id="demo-summary" aria-live="polite">3 images found</div>
+              <div id="demo-results" class="demo-results"></div>
+              <div class="panel-footer"><span id="demo-selection" aria-live="polite">3 selected</span><button type="button" id="demo-best">Select best</button></div>
+            </aside>
+          </div>
+        </div>
+        <p class="demo-caption">Try the page views, filter Explore images, or close the sidebar.<br>Sample illustrations and file details. No page is scanned.</p>
+      </div>
+    </section>
+
+    <section class="feature-band" id="features"><div class="section-shell feature-grid">
+      <article><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18v16H3zM15 4v16M6 8h6M6 12h6"/></svg><h2>Room for the artwork</h2><p>The page adjusts beside the sidebar. Close it to get your full view back.</p></article>
+      <article><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16L14 12v7l-4 2v-9z"/></svg><h2>Results you control</h2><p>Explore sections stay excluded by default. Your filtering choices are remembered.</p></article>
+      <article><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 6v6c0 5-8 9-8 9s-8-4-8-9V6zM8 12l3 3 5-6"/></svg><h2>Local, from the start</h2><p>No account or analytics. Scans and preferences stay in your browser.</p></article>
+    </div></section>
+
+    <section class="workflow section-shell" id="how-it-works">
+      <div class="section-heading"><h2>From artwork<br>to the file you want.</h2><p>Open a page. Open Deviation Lens.<br>The image details are right there.</p></div>
+      <ol class="steps">
+        <li><span class="step-number">1</span><div><h3>Find what the page offers</h3><p>Scan a deviation, gallery, or the home feed. Results refresh when you move to another page.</p></div></li>
+        <li><span class="step-number">2</span><div><h3>Compare the available versions</h3><p>See dimensions and formats at a glance. File sizes load as you scroll, one at a time. Unavailable image URLs are removed.</p></div></li>
+        <li><span class="step-number">3</span><div><h3>Save exactly what you choose</h3><p>Download the best available version or select several files. Choose a folder, or copy image URLs to use later.</p></div></li>
+      </ol>
+    </section>
+
+    <section class="scope-section section-shell">
+      <div class="scope-copy"><h2>Start with DeviantArt.<br>Explore beyond it.</h2><p>Deviation Lens is made for DeviantArt artwork and Wix-hosted image pages. You can also enable “Find images on any page” and grant access to another site.</p><p>The extension finds files the page makes available. The source site determines which resolutions can be accessed.</p><a class="text-link" href="privacy.html">Read our privacy policy</a></div>
+      <div class="scope-settings"><div class="settings-heading"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16M8 4v6M16 14v6"/></svg><span>Your scan preferences</span></div><div class="setting-row"><div><strong>Explore sections</strong><p>Include recommended and watched artwork</p></div><span class="setting-state">Off by default</span></div><div class="setting-row"><div><strong>Any-page scanning</strong><p>Enable access to a site when you need it</p></div><span class="setting-state">Your choice</span></div><div class="setting-row"><div><strong>File size checks</strong><p>Load details for images as you view them</p></div><span class="setting-state enabled">On demand</span></div><p class="settings-note">Your preferences are saved in this browser.</p></div>
+    </section>
+
+    <section class="faq-section section-shell" id="questions"><div class="section-heading"><h2>A few things<br>worth knowing.</h2><p>Before you install.</p></div><div class="faq-list">
+      <details><summary>Is Deviation Lens free?<span aria-hidden="true">+</span></summary><p>Yes. Deviation Lens is free and open source. You can inspect the code, report problems, and contribute on GitHub.</p></details>
+      <details><summary>Does it work on other websites?<span aria-hidden="true">+</span></summary><p>Enable “Find images on any page,” then grant access to the site when Chrome asks. The extension collects images available on the page; site restrictions and lazy loading can affect the results.</p></details>
+      <details><summary>Will it find the original image every time?<span aria-hidden="true">+</span></summary><p>It shows the versions available through the page and supported image URLs. An original download may be available on a deviation page, but the source site controls access and maximum resolution.</p></details>
+      <details><summary>What does the alpha label mean?<span aria-hidden="true">+</span></summary><p>Version 0.1.0-alpha.1 is an early development release. Features are still evolving, and bugs are expected. Report reproducible problems in the GitHub repository.</p></details>
+      <details><summary>Does the extension send my scans to a server?<span aria-hidden="true">+</span></summary><p>No. Scan results are processed in your browser. Size checks and downloads request files directly from their image hosts. Read the privacy policy for more details.</p></details>
+    </div></section>
+
+    <section class="install-section section-shell" id="install">
+      <div class="install-copy"><img src="assets/icon128.png" alt="" width="64" height="64"><span class="release-badge">Alpha release</span><h2>Your next artwork,<br>a closer look.</h2><p class="install-status">Try Deviation Lens 0.1.0-alpha.1. The Chrome Web Store listing is coming soon.</p><a class="button button-primary store-link" href="downloads/deviation-lens-0.1.0-alpha.1.zip" download>Download alpha extension</a><a class="install-source" href="https://github.com/jorgeadev/deviation-lens" target="_blank" rel="noopener noreferrer">Browse the source on GitHub</a></div>
+      <div class="install-guide"><h3>Install the alpha in Chrome</h3><ol><li>Download the ZIP and extract it to a folder.</li><li>Open <code>chrome://extensions</code> and enable <strong>Developer mode</strong>.</li><li>Choose <strong>Load unpacked</strong> and select the extracted folder containing <code>manifest.json</code>.</li><li>Pin Deviation Lens, open a DeviantArt page, and click its icon.</li></ol><p>Keep the extracted folder to reload or update your installation.</p></div>
+    </section>
+  </main>
+  <footer class="site-footer section-shell"><a class="footer-brand" href="index.html"><img src="assets/icon48.png" alt="" width="24" height="24">Deviation Lens</a><p>Independent project. Not affiliated with DeviantArt.<br>© <span id="year">2026</span> Deviation Lens contributors</p><nav aria-label="Footer navigation"><a href="privacy.html">Privacy</a><a href="https://github.com/jorgeadev/deviation-lens/issues" target="_blank" rel="noopener noreferrer">Support</a><a href="https://github.com/jorgeadev/deviation-lens/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">Contribute</a></nav></footer>
+</body>
+</html>

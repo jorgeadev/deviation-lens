@@ -1,0 +1,124 @@
+html:has(.saverPage) {
+	max-height: none;
+	overflow: auto;
+}
+
+.saverPage {
+	width: auto;
+	max-height: none;
+	margin: 0;
+	padding: 24px 16px;
+	background: var(--edge);
+	display: flex;
+	justify-content: center;
+	align-items: flex-start;
+	min-height: 100vh;
+	border-radius: 0;
+	overflow: visible;
+}
+
+.saverCard {
+	width: 640px;
+	background: var(--bg);
+	border-radius: 16px;
+	overflow: hidden;
+	border: 1px solid var(--line);
+}
+
+.saverMain {
+	padding: 14px 18px 18px;
+}
+
+.saverCurrent {
+	margin: 0 0 12px;
+	color: var(--muted);
+	font-size: 13px;
+}
+
+.saverCurrent b {
+	color: var(--green);
+}
+
+.modeList {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.modeItem {
+	display: flex;
+	gap: 10px;
+	align-items: flex-start;
+	padding: 10px 12px;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	background: var(--panel);
+	cursor: pointer;
+}
+
+.modeItem:hover {
+	border-color: #3a4756;
+}
+
+.modeItem.disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+.modeItem.disabled:hover {
+	border-color: var(--line);
+}
+
+.modeItem input {
+	margin-top: 3px;
+	accent-color: var(--green);
+}
+
+.modeItem b {
+	display: block;
+	font-size: 13px;
+}
+
+.modeItem small {
+	display: block;
+	color: var(--muted);
+	font-size: 11.5px;
+	margin-top: 2px;
+}
+
+.saverRow {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+	margin-top: 14px;
+}
+
+.saverStatus {
+	margin-top: 12px;
+	min-height: 18px;
+	color: var(--muted);
+	font-size: 12px;
+}
+
+.saverNote {
+	margin-top: 12px;
+	padding: 10px 12px;
+	border: 1px solid var(--line);
+	border-left: 3px solid var(--amber);
+	border-radius: 8px;
+	background: var(--panel);
+	color: var(--muted);
+	font-size: 12px;
+}
+
+.saverNote b {
+	color: var(--text);
+}
+
+.saverStatus.ok {
+	color: var(--green);
+}
+
+.saverStatus.err {
+	color: var(--amber);
+}
