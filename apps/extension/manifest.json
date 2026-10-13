@@ -2,7 +2,7 @@
 	"manifest_version": 3,
 	"name": "Deviation Lens",
 	"version": "0.1.0",
-	"description": "Find and download artwork images from DeviantArt at the best available quality.",
+	"description": "Independent DeviantArt image downloader for finding available variants, comparing quality, and saving chosen files.",
 	"minimum_chrome_version": "141",
 	"action": {
 		"default_title": "Deviation Lens",

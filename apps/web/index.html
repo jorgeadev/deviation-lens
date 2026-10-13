@@ -4,12 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f6f8fa">
-  <meta name="description" content="Find image variants, compare quality, and save artwork with Deviation Lens. A free, open source browser extension for DeviantArt.">
-  <meta property="og:title" content="Deviation Lens — See the image. Choose the file.">
-  <meta property="og:description" content="An image discovery sidebar for DeviantArt. Compare dimensions and formats, filter Explore sections, and download your selection.">
+  <meta name="description" content="Find image variants available on DeviantArt, compare dimensions and formats, and download the files you choose with Deviation Lens.">
+  <meta property="og:site_name" content="Deviation Lens">
+  <meta property="og:title" content="Deviation Lens | DeviantArt Image Downloader">
+  <meta property="og:description" content="An independent DeviantArt image downloader. Compare available dimensions and formats, include Explore sections, and save the files you choose.">
   <meta property="og:image" content="assets/store-promo-small.png">
   <meta property="og:type" content="website">
-  <title>Deviation Lens — See the image. Choose the file.</title>
+  <title>Deviation Lens | DeviantArt Image Downloader</title>
   <link rel="icon" type="image/png" href="assets/icon48.png">
   <link rel="stylesheet" href="styles.css">
   <script src="app.js" defer></script>
@@ -26,32 +27,24 @@
       <div class="hero-copy">
         <p class="availability"><span aria-hidden="true"></span>Free &amp; open source</p>
         <h1>See the image.<br>Choose the file.</h1>
-        <p class="lede">Bring artwork and its image files into the same view. Find the available versions, compare their quality, and save the ones you want.</p>
+        <p class="lede">An independent DeviantArt image downloader. Find available variants, compare their dimensions and quality, and save the files you choose.</p>
         <div class="hero-actions"><a class="button button-primary store-link" href="#install">Get Deviation Lens <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v12m-5-5 5 5 5-5M5 20h14"/></svg></a><a class="button button-quiet" href="https://github.com/jorgeadev/deviation-lens" target="_blank" rel="noopener noreferrer">View on GitHub</a></div>
-        <p class="hero-note">For Chrome and compatible Chromium browsers.<br>Early alpha. Built independently of DeviantArt.</p>
+        <p class="hero-note">Available now in the Chrome Web Store.<br>Free to use. Built independently of DeviantArt.</p>
       </div>
       <div class="demo-wrap">
-        <div class="demo-intro"><span>Take the sidebar for a spin</span><span class="demo-label">Interactive preview</span></div>
-        <div class="product-frame">
-          <div class="frame-bar"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span><div class="address-bar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11V7a5 5 0 0 1 10 0v4M5 11h14v10H5z"/></svg>deviantart.com</div></div>
-          <div class="demo-toolbar"><div class="scene-tabs"><button type="button" class="scene-tab active" data-scene="gallery" aria-pressed="true">Gallery</button><button type="button" class="scene-tab" data-scene="artwork" aria-pressed="false">Artwork</button></div><button type="button" id="demo-sidebar-toggle" class="demo-tool" aria-expanded="true" aria-controls="demo-aside">Close sidebar</button></div>
-          <div class="demo-stage" id="demo-stage">
-            <div class="demo-page">
-              <div class="gallery-heading"><span class="page-avatar"></span><div><b>A little inspiration</b><span>Sample artwork</span></div></div>
-              <div class="gallery-grid"><figure class="sample-art"><img src="assets/forest.svg" alt="Illustration of a quiet forest lake" width="640" height="480"><figcaption>Still water</figcaption></figure><figure class="sample-art"><img src="assets/mountains.svg" alt="Illustration of mountains at sunrise" width="640" height="480"><figcaption>First light</figcaption></figure><figure class="sample-art wide"><img src="assets/coast.svg" alt="Illustration of a sunlit coastline" width="640" height="480"><figcaption>Along the coast</figcaption></figure></div>
-              <div class="demo-explore"><p>Explore Recent Deviations <span id="explore-state">Excluded from results</span></p><div class="explore-thumbs"><img src="assets/mountains.svg" alt="" width="640" height="480"><img src="assets/forest.svg" alt="" width="640" height="480"><img src="assets/coast.svg" alt="" width="640" height="480"></div></div>
-            </div>
-            <aside class="demo-aside" id="demo-aside" aria-label="Extension preview">
-              <div class="panel-brand"><img src="assets/icon48.png" alt="" width="28" height="28"><div><b>Deviation Lens</b><span class="panel-version">0.1.0-alpha.1</span></div><button type="button" id="demo-close" aria-label="Close preview sidebar" class="demo-close">×</button></div>
-              <div class="demo-filter"><label><input id="demo-explore" type="checkbox"><span>Include Explore sections<small>Add their images to these results</small></span></label></div>
-              <div class="result-summary" id="demo-summary" aria-live="polite">3 images found</div>
-              <div id="demo-results" class="demo-results"></div>
-              <div class="panel-footer"><span id="demo-selection" aria-live="polite">3 selected</span><button type="button" id="demo-best">Select best</button></div>
-            </aside>
-          </div>
-        </div>
-        <p class="demo-caption">Try the page views, filter Explore images, or close the sidebar.<br>Sample illustrations and file details. No page is scanned.</p>
+        <div class="demo-intro"><span>Find and compare available images</span><span class="demo-label">Product preview</span></div>
+        <figure class="product-frame hero-product-frame"><img class="hero-product-shot" src="assets/product-shots/download-your-picks.png" alt="Illustrative Deviation Lens preview showing image variants, selection controls, and download options" width="1600" height="900" fetchpriority="high"><figcaption class="demo-caption">Illustrative product preview. Available image quality depends on the source page and image host.</figcaption></figure>
       </div>
+    </section>
+
+    <section class="showcase section-shell" aria-labelledby="showcase-title">
+      <div class="showcase-heading"><div><p class="eyebrow">A closer look</p><h2 id="showcase-title">Find the version<br>that fits your needs.</h2></div><p>See image dimensions and estimated file sizes together, then choose the files you want to save.</p></div>
+      <div class="showcase-grid">
+        <figure class="showcase-card showcase-featured"><a href="assets/product-shots/scan-preferences.png" target="_blank" rel="noopener noreferrer" aria-label="Open the scan preferences preview at full size"><img src="assets/product-shots/scan-preferences.png" alt="Deviation Lens scan settings for Explore sections, scanning other pages, best-only results, and small variants" width="1600" height="900" loading="lazy"></a><figcaption><span>01 / YOUR PREFERENCES</span><strong>Make every scan your own.</strong><p>Choose which page sections to include and which image variants to see.</p></figcaption></figure>
+        <figure class="showcase-card"><a href="assets/product-shots/compare-best-quality.png" target="_blank" rel="noopener noreferrer" aria-label="Open the image quality comparison preview at full size"><img src="assets/product-shots/compare-best-quality.png" alt="Deviation Lens comparing available image dimensions and marking the best available version" width="1600" height="900" loading="lazy"></a><figcaption><span>02 / COMPARE</span><strong>Choose with context.</strong><p>Compare dimensions, formats, and estimated file sizes.</p></figcaption></figure>
+        <figure class="showcase-card"><a href="assets/product-shots/find-image-variants.png" target="_blank" rel="noopener noreferrer" aria-label="Open the image variants preview at full size"><img src="assets/product-shots/find-image-variants.png" alt="Deviation Lens sidebar finding several image variants alongside an artwork page" width="1600" height="900" loading="lazy"></a><figcaption><span>03 / DISCOVER</span><strong>See what the page offers.</strong><p>Scan a page and review the image files it makes available.</p></figcaption></figure>
+      </div>
+      <p class="showcase-note">Illustrative product previews. Available image quality depends on the source page and image host.</p>
     </section>
 
     <section class="feature-band" id="features"><div class="section-shell feature-grid">
@@ -78,12 +71,13 @@
       <details><summary>Is Deviation Lens free?<span aria-hidden="true">+</span></summary><p>Yes. Deviation Lens is free and open source. You can inspect the code, report problems, and contribute on GitHub.</p></details>
       <details><summary>Does it work on other websites?<span aria-hidden="true">+</span></summary><p>Enable “Find images on any page,” then grant access to the site when Chrome asks. The extension collects images available on the page; site restrictions and lazy loading can affect the results.</p></details>
       <details><summary>Will it find the original image every time?<span aria-hidden="true">+</span></summary><p>It shows the versions available through the page and supported image URLs. An original download may be available on a deviation page, but the source site controls access and maximum resolution.</p></details>
+      <details><summary>Can I download any DeviantArt image?<span aria-hidden="true">+</span></summary><p>Deviation Lens can find supported files that the current page and image host make available. It does not bypass access restrictions or grant rights to use artwork. Follow the artist’s license and download only content you have permission to use.</p></details>
       <details><summary>What does the alpha label mean?<span aria-hidden="true">+</span></summary><p>Version 0.1.0-alpha.1 is an early development release. Features are still evolving, and bugs are expected. Report reproducible problems in the GitHub repository.</p></details>
       <details><summary>Does the extension send my scans to a server?<span aria-hidden="true">+</span></summary><p>No. Scan results are processed in your browser. Size checks and downloads request files directly from their image hosts. Read the privacy policy for more details.</p></details>
     </div></section>
 
     <section class="install-section section-shell" id="install">
-      <div class="install-copy"><img src="assets/icon128.png" alt="" width="64" height="64"><span class="release-badge">Alpha release</span><h2>Your next artwork,<br>a closer look.</h2><p class="install-status">Try Deviation Lens 0.1.0-alpha.1. The Chrome Web Store listing is coming soon.</p><a class="button button-primary store-link" href="downloads/deviation-lens-0.1.0-alpha.1.zip" download>Download alpha extension</a><a class="install-source" href="https://github.com/jorgeadev/deviation-lens" target="_blank" rel="noopener noreferrer">Browse the source on GitHub</a></div>
+      <div class="install-copy"><img src="assets/icon128.png" alt="" width="64" height="64"><span class="release-badge">Available now</span><h2>Your next artwork,<br>a closer look.</h2><p class="install-status">Install Deviation Lens from the Chrome Web Store. The extension is free, and its source is available on GitHub.</p><a class="button button-primary store-link" href="https://chromewebstore.google.com/detail/deviation-lens/gkcejfnaghdbhhggjndkhpnfajnfpigc" target="_blank" rel="noopener noreferrer">Add to Chrome <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v12m-5-5 5 5 5-5M5 20h14"/></svg></a><a class="install-source" href="downloads/deviation-lens-0.1.0-alpha.1.zip" download>Download the development build</a></div>
       <div class="install-guide"><h3>Install the alpha in Chrome</h3><ol><li>Download the ZIP and extract it to a folder.</li><li>Open <code>chrome://extensions</code> and enable <strong>Developer mode</strong>.</li><li>Choose <strong>Load unpacked</strong> and select the extracted folder containing <code>manifest.json</code>.</li><li>Pin Deviation Lens, open a DeviantArt page, and click its icon.</li></ol><p>Keep the extracted folder to reload or update your installation.</p></div>
     </section>
   </main>

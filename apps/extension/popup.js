@@ -64,7 +64,7 @@ function fmtBytes(b) {
 	return `${v >= 100 || i === 0 ? Math.round(v) : v.toFixed(1)} ${units[i]}`;
 }
 
-const fmtDims = (w, h) => (w && h ? `${w}×${h}` : "—");
+const fmtDims = (w, h) => (w && h ? `${w}×${h}` : "|");
 
 function sendTo(tabId, msg) {
 	return new Promise((resolve) => {
@@ -234,7 +234,7 @@ function renderSummary() {
 			const px = (img.w || 0) * (img.h || 0);
 			return px > acc.px ? { px, label: fmtDims(img.w, img.h) } : acc;
 		},
-		{ px: 0, label: "—" },
+		{ px: 0, label: "|" },
 	);
 
 	const add = (text, cls) => {
@@ -425,7 +425,7 @@ function resetSizeQueue() {
 
 function renderSizeResult(url, info) {
 	state.sizes[url] = info || { ok: false, status: 0 };
-	const text = info?.ok ? fmtBytes(info.bytes) : info?.status ? `HTTP ${info.status}` : "—";
+	const text = info?.ok ? fmtBytes(info.bytes) : info?.status ? `HTTP ${info.status}` : "|";
 	document.querySelectorAll(`[data-size-for="${CSS.escape(url)}"]`).forEach((cell) => {
 		cell.textContent = text;
 	});
@@ -524,7 +524,7 @@ function loadSizes() {
 		if (failedImageUrls.has(url)) return;
 		if (state.sizes[url]) {
 			const info = state.sizes[url];
-			cell.textContent = info.ok ? fmtBytes(info.bytes) : info.status ? `HTTP ${info.status}` : "—";
+			cell.textContent = info.ok ? fmtBytes(info.bytes) : info.status ? `HTTP ${info.status}` : "|";
 			return;
 		}
 		sizeObserver.observe(cell);
@@ -713,8 +713,8 @@ async function scan(deep, userInitiated) {
 			if (img.role !== "crop") state.selected.add(img.url);
 		});
 		$("#pageMeta").textContent = res.page.artist
-			? `${res.page.title} — ${res.page.artist} on DeviantArt`
-			: `${res.page.title} — ${new URL(url).hostname}`;
+			? `${res.page.title} | ${res.page.artist} on DeviantArt`
+			: `${res.page.title} | ${new URL(url).hostname}`;
 		setupRange();
 		renderSummary();
 		renderList();
@@ -1010,8 +1010,8 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
 			if (img.role !== "crop") state.selected.add(img.url);
 		});
 		$("#pageMeta").textContent = msg.data.page.artist
-			? `${msg.data.page.title} — ${msg.data.page.artist} on DeviantArt`
-			: `${msg.data.page.title} — ${new URL(msg.data.page.url).hostname}`;
+			? `${msg.data.page.title} | ${msg.data.page.artist} on DeviantArt`
+			: `${msg.data.page.title} | ${new URL(msg.data.page.url).hostname}`;
 		renderSummary();
 		renderList(true);
 		updateActionLabels();
