@@ -19,7 +19,7 @@ Results depend on the page and its image host. Deviation Lens does not control w
 
 ## Install
 
-The Chrome Web Store listing is still a draft. To try the current alpha from source:
+Install the published [Chrome Web Store release](https://chromewebstore.google.com/detail/deviation-lens/gkcejfnaghdbhhggjndkhpnfajnfpigc), or try the current alpha from source:
 
 1. Clone or download this repository.
 2. Open `chrome://extensions` in Chrome and enable **Developer mode**.

@@ -61,7 +61,7 @@
 		return `${v >= 100 || i === 0 ? Math.round(v) : v.toFixed(1)} ${units[i]}`;
 	}
 
-	const fmtDims = (w, h) => (w && h ? `${w}×${h}` : "—");
+	const fmtDims = (w, h) => (w && h ? `${w}×${h}` : "|");
 
 	function sendBg(msg) {
 		return new Promise((resolve) => {
@@ -177,7 +177,7 @@
 				const px = (img.w || 0) * (img.h || 0);
 				return px > acc.px ? { px, label: fmtDims(img.w, img.h) } : acc;
 			},
-			{ px: 0, label: "—" },
+			{ px: 0, label: "|" },
 		);
 
 		const add = (text, cls) => {
@@ -371,7 +371,7 @@
 
 	function renderSizeResult(url, info) {
 		state.sizes[url] = info || { ok: false, status: 0 };
-		const text = info?.ok ? fmtBytes(info.bytes) : info?.status ? `HTTP ${info.status}` : "—";
+		const text = info?.ok ? fmtBytes(info.bytes) : info?.status ? `HTTP ${info.status}` : "|";
 		$("#list")
 			.querySelectorAll(`[data-size-for="${CSS.escape(url)}"]`)
 			.forEach((cell) => {
@@ -471,7 +471,7 @@
 			const info = state.sizes[cell.dataset.sizeFor];
 			if (failedImageUrls.has(cell.dataset.sizeFor)) return;
 			if (info) {
-				cell.textContent = info.ok ? fmtBytes(info.bytes) : info.status ? `HTTP ${info.status}` : "—";
+				cell.textContent = info.ok ? fmtBytes(info.bytes) : info.status ? `HTTP ${info.status}` : "|";
 				return;
 			}
 			sizeObserver.observe(cell);
@@ -609,7 +609,7 @@
 						allImages().forEach(({ img }) => {
 							if (img.role !== "crop") state.selected.add(img.url);
 						});
-						$("#pageMeta").textContent = `${partial.page.title} — ${partial.page.artist} on DeviantArt`;
+						$("#pageMeta").textContent = `${partial.page.title} | ${partial.page.artist} on DeviantArt`;
 						renderSummary();
 						renderList(true);
 						updateActionLabels();
@@ -629,7 +629,7 @@
 			allImages().forEach(({ img }) => {
 				if (img.role !== "crop") state.selected.add(img.url);
 			});
-			$("#pageMeta").textContent = `${res.page.title} — ${res.page.artist} on DeviantArt`;
+			$("#pageMeta").textContent = `${res.page.title} | ${res.page.artist} on DeviantArt`;
 			setupRange();
 			renderSummary();
 			renderList(true);

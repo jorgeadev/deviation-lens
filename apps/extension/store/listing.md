@@ -1,4 +1,4 @@
-# Chrome Web Store listing draft
+# Proposed Chrome Web Store listing update
 
 ## Name
 
@@ -6,15 +6,15 @@ Deviation Lens
 
 ## Short description
 
-Find image variants on DeviantArt, compare available quality, and save the files you choose.
+DeviantArt image downloader: find available variants, compare quality, and save the files you choose.
 
 ## Detailed description
 
-Deviation Lens helps you find the image files available on a DeviantArt page. Scan the current page to see detected image variants, dimensions, and estimated file sizes. Choose the best available version, download selected images, or copy their URLs.
+Deviation Lens is an independent DeviantArt image downloader. Scan the current page to find supported image variants, compare dimensions, formats, and estimated file sizes, then download the best available version or the images you select. You can also copy image URLs.
 
-Explore sections are excluded by default and can be included with a saved setting. An optional “Find images on any page” setting enables scans beyond DeviantArt and its image host; Chrome asks for site access when needed. The extension processes page content in your browser and does not send scan results to a developer-operated service.
+Explore sections are excluded by default and can be included with a saved setting. An optional “Find images on any page” setting enables scans on other websites after you grant Chrome access. The extension processes page content in your browser and does not send scan results to a developer-operated service.
 
-The quality available depends on the source page and image host. DeviantArt and its image hosts are third-party services and are not affiliated with this extension.
+Deviation Lens is not affiliated with or endorsed by DeviantArt. It only finds image files made available by the page and its image host. Do not use it to bypass access restrictions; download and use artwork only when you have permission.
 
 ## Suggested category
 
