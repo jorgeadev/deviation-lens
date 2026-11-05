@@ -13,6 +13,7 @@
 		"version:set": "node packages/tools/scripts/release/set-version.mjs",
 		"pack:extension": "node packages/tools/scripts/release/pack-extension.mjs",
 		"publish:extension": "pnpm run pack:extension",
+		"test:unit": "pnpm --filter @deviation-lens/tools run test",
 		"test:smoke": "pnpm --filter @deviation-lens/tools run smoke",
 		"test:e2e": "pnpm --filter @deviation-lens/tools run e2e",
 		"test:e2e:profile": "pnpm --filter @deviation-lens/tools run e2e:profile",

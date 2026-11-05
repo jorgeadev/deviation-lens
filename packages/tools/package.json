@@ -5,6 +5,7 @@
 	"description": "Research and E2E tooling for the Deviation Lens extension (Chrome for Testing + puppeteer-core).",
 	"type": "commonjs",
 	"scripts": {
+		"test": "node --test test/",
 		"smoke": "node scripts/checks/check-fs.js",
 		"e2e": "node scripts/e2e/e2e.js",
 		"e2e:profile": "node scripts/e2e/e2e-profile.js",
