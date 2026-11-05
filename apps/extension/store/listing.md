@@ -45,7 +45,7 @@ Find artwork images on the current page, compare their available dimensions and 
 - **scripting**: Injects the packaged `content.js` scanner into the current tab when the user opens or rescans the extension. On other sites, scanning also requires the user's optional site grant.
 - **sidePanel**: Opens the image results interface beside the current browser page.
 - **storage**: Stores the user's scan and download preferences, including Explore filtering, image options, minimum size, ZIP and file name settings, and download mode.
-- **tabs**: Reads the active tab URL, follows active-tab changes and navigation while the extension is open, and opens image links and the folder settings page.
+- **tabs**: Reads the active tab URL, follows active-tab changes and navigation while the extension is open, and opens image links and the settings page.
 
 ### Remote code declaration
 

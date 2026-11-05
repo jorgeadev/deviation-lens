@@ -1,5 +1,5 @@
 const $ = (s) => document.querySelector(s);
-const { naming, history: savedHistory } = globalThis.DeviationLens;
+const { naming, history: savedHistory, folder } = globalThis.DeviationLens;
 
 const state = {
 	tabId: null,
@@ -14,7 +14,16 @@ const state = {
 	pollTimer: null,
 	jobId: null,
 	jobTimer: null,
-	prefs: { zipDownloads: true, filenameTemplate: "", rememberSaved: false, minSize: 0 },
+	prefs: {
+		zipDownloads: true,
+		filenameTemplate: "",
+		rememberSaved: false,
+		minSize: 0,
+		bestOnly: false,
+		smallVariants: true,
+		showExploreImages: false,
+		allowAnyPage: false,
+	},
 	savedKeys: new Set(),
 	busy: false,
 	renderLimit: 40,
@@ -126,7 +135,7 @@ async function ensureContentScript(tab, permissionGranted) {
 	const url = tab.url || "";
 	if (!isWebUrl(url)) return false;
 	if (!isDeviantArtUrl(url) && !isWixmpImageUrl(url)) {
-		if (!$("#chkAnyPage").checked) return false;
+		if (!state.prefs.allowAnyPage) return false;
 		const originPattern = `${new URL(url).origin}/*`;
 		const permission = { origins: [originPattern] };
 		const allowed = permissionGranted || (await chrome.permissions.contains(permission));
@@ -209,8 +218,22 @@ function isSaved(asset, img) {
 	return state.prefs.rememberSaved && state.savedKeys.has(assetKey(asset, img));
 }
 
+// A single artwork page lists the sizes of one image, so Best only would just hide the choice.
+function bestOnlyApplies() {
+	const d = state.data;
+	return !!(state.prefs.bestOnly && d?.page && (d.assets.length > 1 || !d.page.isArtPage));
+}
+
+function activeFilterLabels() {
+	const labels = [];
+	if (state.prefs.minSize) labels.push(`${tierFor(state.prefs.minSize).replace(/\+$/, "")}+ only`);
+	if (bestOnlyApplies()) labels.push("best only");
+	if (!state.prefs.smallVariants) labels.push("small variants hidden");
+	return labels;
+}
+
 function visibleImages() {
-	const showSmall = $("#chkSmall").checked;
+	const showSmall = state.prefs.smallVariants;
 	let list = allImages().filter(({ img }) => meetsMinSize(img));
 	if (!showSmall) {
 		list = list.filter(({ img }) => {
@@ -219,9 +242,7 @@ function visibleImages() {
 			return true;
 		});
 	}
-	const bestWrap = $("#chkBestWrap");
-	const bestOnly = $("#chkBest").checked && bestWrap && !bestWrap.classList.contains("hidden");
-	if (bestOnly) {
+	if (bestOnlyApplies()) {
 		const rank = (img) => (img.role === "download" ? 0 : img.role === "max" ? 1 : 2);
 		const byAsset = new Map();
 		list.forEach((entry) => {
@@ -290,6 +311,9 @@ function renderSummary() {
 	if (d.page.downloadUrl) add("original download detected", "ok");
 	else if (d.assets.some((a) => a.bestUrl)) add("max CDN quality reconstructed");
 	if (d.truncated) add(`more than ${d.assets.length} assets found, only these were transferred`, "warn");
+	// These filters live in Settings, so show here why images might be missing.
+	const filters = activeFilterLabels();
+	if (filters.length) add(`Filters: ${filters.join(", ")}`, "warn");
 }
 
 function chip(text, cls) {
@@ -385,7 +409,7 @@ function renderList(keepScroll) {
 		const small = el("div", "");
 		if (d.assets.length) {
 			big.textContent = "No images match your filters";
-			small.textContent = "Lower the minimum size or turn on Small variants to see more.";
+			small.textContent = "Lower the minimum size or turn on Small variants in Settings to see more.";
 		} else {
 			big.textContent = "No images found in the main view";
 			small.textContent = "Open a deviation page, a gallery, or scroll the page so the images load, then press Rescan.";
@@ -412,7 +436,7 @@ function renderList(keepScroll) {
 	}
 	list.appendChild(countBar);
 
-	const showSmall = $("#chkSmall").checked;
+	const showSmall = state.prefs.smallVariants;
 	d.assets.slice(0, shown).forEach((asset, idx) => {
 		const rows = asset.images.filter((img) => visibleSet.has(img));
 		if (!rows.length) return;
@@ -674,8 +698,68 @@ function downloadNew(entries, label) {
 	downloadEntries(fresh, label);
 }
 
+let resolveSaveChoice = null;
+
+function finishSaveChoice(mode) {
+	const resolve = resolveSaveChoice;
+	resolveSaveChoice = null;
+	$("#saveChoice").close();
+	resolve?.(mode);
+}
+
+function initSaveChoice() {
+	const remember = async (mode) => {
+		await chrome.storage.local.set({ saveMode: mode });
+		finishSaveChoice(mode);
+	};
+	$("#btnChoiceFolder").addEventListener("click", async () => {
+		$("#saveChoiceError").classList.add("hidden");
+		try {
+			const handle = await window.showDirectoryPicker({ mode: "readwrite" });
+			await folder.setFolderHandle(handle);
+			await chrome.storage.local.set({ saveMode: "custom", folderName: handle.name });
+			finishSaveChoice("custom");
+		} catch (e) {
+			// Closing the picker leaves the choice open, so the user can still pick another option.
+			if (e?.name === "AbortError") return;
+			$("#saveChoiceError").textContent = `Could not use that folder: ${e?.message || e}`;
+			$("#saveChoiceError").classList.remove("hidden");
+		}
+	});
+	$("#btnChoiceAsk").addEventListener("click", () => remember("ask"));
+	$("#btnChoiceDefault").addEventListener("click", () => remember("default"));
+	$("#btnChoiceCancel").addEventListener("click", () => finishSaveChoice(null));
+	// Also covers the Escape key. This event arrives late, so it can belong to an earlier opening of the dialog.
+	$("#saveChoice").addEventListener("close", () => {
+		if (!$("#saveChoice").open) finishSaveChoice(null);
+	});
+}
+
+function askSaveLocation() {
+	// Some Chromium browsers do not offer folder picking, which leaves the other two options.
+	$("#btnChoiceFolder").classList.toggle("hidden", typeof window.showDirectoryPicker !== "function");
+	$("#saveChoiceError").classList.add("hidden");
+	return new Promise((resolve) => {
+		resolveSaveChoice = resolve;
+		$("#saveChoice").showModal();
+	});
+}
+
+// Returns false if the download should not start. Every download path comes through here, on a user click.
+async function ensureSaveLocation() {
+	const { saveMode: stored } = await chrome.storage.local.get("saveMode");
+	const saveMode = stored || (await askSaveLocation());
+	if (!saveMode) return false;
+	if (saveMode !== "custom") return true;
+	const access = await folder.requestAccess();
+	if (access.ok) return true;
+	showNotice(access.error, "err", { label: "Open Settings", run: openSettings });
+	return false;
+}
+
 async function startBatch(items, label, options) {
 	if (!items.length) return;
+	if (!(await ensureSaveLocation())) return;
 	if (!options?.separateFiles && state.prefs.zipDownloads && items.length > 1) {
 		startZip(items);
 		return;
@@ -813,7 +897,7 @@ async function scan(deep, userInitiated) {
 	const initialUrl = state.pageUrl;
 	let permissionRequest = null;
 	let requestedOrigin = "";
-	if (userInitiated && $("#chkAnyPage").checked && isWebUrl(initialUrl) && !isDeviantArtUrl(initialUrl) && !isWixmpImageUrl(initialUrl)) {
+	if (userInitiated && state.prefs.allowAnyPage && isWebUrl(initialUrl) && !isDeviantArtUrl(initialUrl) && !isWixmpImageUrl(initialUrl)) {
 		requestedOrigin = new URL(initialUrl).origin;
 		permissionRequest = chrome.permissions.request({ origins: [`${requestedOrigin}/*`] });
 	}
@@ -846,7 +930,7 @@ async function scan(deep, userInitiated) {
 		state.tabId = tabId;
 		state.pageUrl = url;
 
-		if (!isDeviantArtUrl(url) && !isWixmpImageUrl(url) && !$("#chkAnyPage").checked) {
+		if (!isDeviantArtUrl(url) && !isWixmpImageUrl(url) && !state.prefs.allowAnyPage) {
 			$("#pageMeta").textContent = "Unsupported page";
 			showNotice("This page is outside DeviantArt. Enable “Find images on any page” to scan it.", "err");
 			return;
@@ -868,8 +952,8 @@ async function scan(deep, userInitiated) {
 		}
 		const msg = {
 			type: deep ? "DA_DEEP_SCAN" : "DA_SCAN",
-			showExploreImages: $("#chkExplore").checked,
-			allowAnyPage: $("#chkAnyPage").checked,
+			showExploreImages: state.prefs.showExploreImages,
+			allowAnyPage: state.prefs.allowAnyPage,
 			scanId: requestId,
 		};
 		const res = await sendTo(tabId, msg);
@@ -921,38 +1005,21 @@ function setRangeStatus(text, kind) {
 	s.className = `rangeStatus${kind ? ` ${kind}` : ""}`;
 }
 
-async function refreshFolderLabel() {
-	let saveMode = "default";
-	let folderName = "";
-	try {
-		const stored = await chrome.storage.local.get(["saveMode", "folderName"]);
-		saveMode = stored.saveMode || "default";
-		folderName = stored.folderName || "";
-	} catch (_e) {}
-	const label = saveMode === "custom" ? folderName || "Custom" : saveMode === "ask" ? "Ask each time" : "Default";
-	$("#folderLabel").textContent = `Folder: ${label}`;
-	$("#btnFolder").title =
-		saveMode === "custom"
-			? `Custom folder: ${folderName}. Click to change.`
-			: saveMode === "ask"
-				? "A Save As dialog opens for every file or ZIP. Click to change."
-				: "Downloads\\DeviantArt (browser default). Click to choose a folder.";
+function openSettings() {
+	chrome.tabs.create({ url: chrome.runtime.getURL("saver.html") });
 }
 
-function initFolderButton() {
-	const icon = $("#btnFolder .folderIcon");
-	if (icon && !icon.firstChild) {
-		icon.appendChild(svgIcon(["M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"], 13));
-	}
-	$("#btnFolder").addEventListener("click", () => {
-		chrome.tabs.create({ url: chrome.runtime.getURL("saver.html") });
-	});
-	chrome.storage.onChanged.addListener((changes, area) => {
+const RESULT_PREFS = ["zipDownloads", "filenameTemplate", "rememberSaved", "minSize", "bestOnly", "smallVariants"];
+const SCAN_PREFS = ["showExploreImages", "allowAnyPage"];
+
+function initSettings() {
+	$("#btnOpenSettings").addEventListener("click", openSettings);
+	chrome.storage.onChanged.addListener(async (changes, area) => {
 		if (area !== "local") return;
-		refreshFolderLabel();
-		if (["zipDownloads", "filenameTemplate", "rememberSaved"].some((key) => key in changes)) applyPrefs();
+		const rescan = SCAN_PREFS.some((key) => key in changes);
+		if (rescan || RESULT_PREFS.some((key) => key in changes)) await applyPrefs();
+		if (rescan && state.tabId) scan(false);
 	});
-	refreshFolderLabel();
 }
 
 async function refreshSavedKeys() {
@@ -962,6 +1029,7 @@ async function refreshSavedKeys() {
 		state.savedKeys = new Set();
 	}
 	if (state.data?.assets) {
+		renderSummary();
 		renderList(true);
 		updateActionLabels();
 	}
@@ -969,35 +1037,17 @@ async function refreshSavedKeys() {
 
 async function applyPrefs() {
 	try {
-		const stored = await chrome.storage.local.get(["zipDownloads", "filenameTemplate", "rememberSaved", "minSize"]);
+		const stored = await chrome.storage.local.get([...RESULT_PREFS, ...SCAN_PREFS]);
 		state.prefs.zipDownloads = stored.zipDownloads !== false;
 		state.prefs.filenameTemplate = stored.filenameTemplate || "";
 		state.prefs.rememberSaved = stored.rememberSaved === true;
 		state.prefs.minSize = Number(stored.minSize) || 0;
+		state.prefs.bestOnly = stored.bestOnly === true;
+		state.prefs.smallVariants = stored.smallVariants !== false;
+		state.prefs.showExploreImages = stored.showExploreImages === true;
+		state.prefs.allowAnyPage = stored.allowAnyPage === true;
 	} catch (_e) {}
-	$("#selMinSize").value = String(state.prefs.minSize);
 	await refreshSavedKeys();
-}
-
-async function initBestOnly() {
-	try {
-		const stored = await chrome.storage.local.get("bestOnly");
-		if (stored.bestOnly) $("#chkBest").checked = true;
-	} catch (_e) {}
-}
-
-async function initExploreImages() {
-	try {
-		const stored = await chrome.storage.local.get("showExploreImages");
-		$("#chkExplore").checked = stored.showExploreImages === true;
-	} catch (_e) {}
-}
-
-async function initAnyPage() {
-	try {
-		const stored = await chrome.storage.local.get("allowAnyPage");
-		$("#chkAnyPage").checked = stored.allowAnyPage === true;
-	} catch (_e) {}
 }
 
 function setupRange() {
@@ -1005,8 +1055,6 @@ function setupRange() {
 	const box = $("#rangeBox");
 	const show = !!(p?.isProfile && p.artist);
 	box.classList.toggle("hidden", !show);
-	const bestWrap = $("#chkBestWrap");
-	bestWrap.classList.toggle("hidden", !(state.data && (state.data.assets.length > 1 || !p.isArtPage)));
 	if (!show) return;
 	if (!$("#rangeFrom").value) {
 		const to = new Date();
@@ -1129,24 +1177,6 @@ function bindUi() {
 	}
 	$("#btnRescan").addEventListener("click", () => scan(false, true));
 	$("#btnReveal").addEventListener("click", () => scan(true, true));
-	$("#chkSmall").addEventListener("change", () => {
-		renderList();
-		updateActionLabels();
-	});
-	$("#chkBest").addEventListener("change", () => {
-		chrome.storage.local.set({ bestOnly: $("#chkBest").checked });
-		renderList();
-		updateActionLabels();
-	});
-	$("#chkExplore").addEventListener("change", () => {
-		chrome.storage.local.set({ showExploreImages: $("#chkExplore").checked });
-		if (state.tabId) scan(false);
-	});
-	$("#chkAnyPage").addEventListener("change", () => {
-		const enabled = $("#chkAnyPage").checked;
-		chrome.storage.local.set({ allowAnyPage: enabled });
-		if (state.tabId) scan(false, true);
-	});
 	$("#btnRangeScan").addEventListener("click", () => scanRange());
 	$("#btnRangeDownload").addEventListener("click", () => {
 		const entries = rangeEntries().filter(({ img }) => meetsMinSize(img));
@@ -1166,12 +1196,6 @@ function bindUi() {
 	$("#btnAll").addEventListener("click", () => downloadNew(visibleImages(), "Download all"));
 	$("#btnCancelJob").addEventListener("click", () => {
 		if (state.jobId) sendBg({ type: "OS_CANCEL", jobId: state.jobId });
-	});
-	$("#selMinSize").addEventListener("change", () => {
-		state.prefs.minSize = Number($("#selMinSize").value) || 0;
-		chrome.storage.local.set({ minSize: state.prefs.minSize });
-		if (state.data?.assets) renderList();
-		updateActionLabels();
 	});
 	$("#btnCopy").addEventListener("click", async () => {
 		const urls = visibleImages().map(({ img }) => img.url);
@@ -1243,12 +1267,10 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
 
 (async function init() {
 	bindUi();
-	initFolderButton();
+	initSettings();
+	initSaveChoice();
 	const currentWindow = await chrome.windows.getCurrent();
 	state.windowId = currentWindow.id;
-	await initBestOnly();
-	await initExploreImages();
-	await initAnyPage();
 	await applyPrefs();
 	resumeActiveJob();
 	const tab = await getTargetTab();
@@ -1261,7 +1283,7 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
 	const url = tab.url || "";
 	state.pageUrl = url;
 	lastAutoScanKey = `${tab.id}:${url}`;
-	if (!isDeviantArtUrl(url) && !isWixmpImageUrl(url) && !$("#chkAnyPage").checked) {
+	if (!isDeviantArtUrl(url) && !isWixmpImageUrl(url) && !state.prefs.allowAnyPage) {
 		$("#pageMeta").textContent = url ? "Unsupported page" : "Active tab URL unavailable";
 		showNotice(
 			url

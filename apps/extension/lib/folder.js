@@ -28,6 +28,20 @@
 		}
 	}
 
+	async function setFolderHandle(handle) {
+		const db = await openHandlesDb();
+		try {
+			await new Promise((resolve, reject) => {
+				const tx = db.transaction("handles", "readwrite");
+				tx.objectStore("handles").put(handle, "folder");
+				tx.oncomplete = () => resolve();
+				tx.onerror = () => reject(tx.error);
+			});
+		} finally {
+			db.close();
+		}
+	}
+
 	async function createUniqueFile(dir, name) {
 		const dot = name.lastIndexOf(".");
 		const stem = dot > 0 ? name.slice(0, dot) : name;
@@ -47,13 +61,29 @@
 	// Returns an error result, rather than throwing, when the folder is missing or its permission has lapsed.
 	async function prepare() {
 		const handle = await getFolderHandle();
-		if (!handle) return { ok: false, error: "No custom folder selected yet. Open the extension folder settings." };
+		if (!handle) return { ok: false, error: "No custom folder selected yet. Choose one in Settings." };
 		let permission = "granted";
 		try {
 			permission = await handle.queryPermission({ mode: "readwrite" });
 		} catch (_e) {}
-		if (permission !== "granted") return { ok: false, error: "Folder access expired. Open Folder settings and click Connect again." };
+		if (permission !== "granted")
+			return { ok: false, error: "Folder access expired. Download again and allow access, or use Connect folder again in Settings." };
 		return { ok: true, handle };
+	}
+
+	// Chrome can drop folder access between sessions, and only a page handling a user click can ask for it again.
+	// The service worker and offscreen document cannot, so the panel calls this before starting a download.
+	async function requestAccess() {
+		const handle = await getFolderHandle();
+		if (!handle) return { ok: false, error: "No custom folder selected yet. Choose one in Settings." };
+		try {
+			let permission = await handle.queryPermission({ mode: "readwrite" });
+			if (permission !== "granted") permission = await handle.requestPermission({ mode: "readwrite" });
+			if (permission === "granted") return { ok: true };
+		} catch (e) {
+			return { ok: false, error: `Could not reach the download folder: ${e?.message || e}` };
+		}
+		return { ok: false, error: "Access to the download folder was not allowed." };
 	}
 
 	async function writeBlob(root, relativePath, blob) {
@@ -69,5 +99,5 @@
 	}
 
 	globalThis.DeviationLens = globalThis.DeviationLens || {};
-	globalThis.DeviationLens.folder = { prepare, writeBlob };
+	globalThis.DeviationLens.folder = { getFolderHandle, setFolderHandle, prepare, requestAccess, writeBlob };
 })();

@@ -14,6 +14,6 @@ This directory contains Chrome Web Store listing copy and graphics for Deviation
 5. Replace the screenshots with accurate captures of the final release. The current screenshots predate the Deviation Lens name and the Explore and any-page settings; do not upload them as final listing screenshots.
 6. Complete the dashboard privacy declarations and review permission justifications against the exact extension package and Google's current policies.
 
-The Chrome manifest uses a numeric version, while version_name displays the alpha label. Increase the numeric manifest version for each future extension release. The packer checks that the app, extension package, and manifest versions agree before creating the archive.
+Versions are plain major.minor.patch numbers. Increase the version for each future extension release, because the store only accepts a higher one. Run pnpm version:set to change it everywhere, and add the new version to [the changelog](../../web/changelog.html). The packer checks that the app, extension package, and manifest versions agree before creating the archive.
 
 The Pages workflow deploys apps/web from main. Configure GitHub Pages to use GitHub Actions before merging a site release.

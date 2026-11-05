@@ -40,6 +40,5 @@
 			"resources": ["popup.css", "sidebar.css", "sidebar.html", "icons/*"],
 			"matches": ["*://*.deviantart.com/*"]
 		}
-	],
-	"version_name": "0.2.0-alpha.1"
+	]
 }

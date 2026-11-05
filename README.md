@@ -2,7 +2,7 @@
 
 Deviation Lens is the Chrome extension in [`apps/extension/`](apps/extension/) for finding image variants on the page you are viewing, comparing their available quality, and saving the images you choose.
 
-**Version:** `0.2.0-alpha.1` · **Status:** Alpha · **Minimum Chrome version:** 141
+**Version:** `0.2.0` · **Status:** Early access · **Minimum Chrome version:** 141
 
 > The extension is in active development. Features and behavior may change before a stable release.
 
@@ -11,18 +11,22 @@ Deviation Lens is the Chrome extension in [`apps/extension/`](apps/extension/) f
 - Scan DeviantArt pages for supported images and available image variants.
 - Review image dimensions, estimated file sizes, and quality details in the extension side panel.
 - Exclude images from DeviantArt Explore sections by default, or opt in to include them. The preference is saved.
-- Optionally scan other websites after enabling **Find images on any page** and granting Chrome access to that site.
+- Optionally scan other websites after enabling **Find images on any page** in settings and granting Chrome access to that site.
 - Select images to download, download all results, or copy image URLs.
 - Save two or more images as one ZIP, with a `manifest.csv` crediting each file's artist and source. A setting restores separate files.
 - Hide images below a minimum size, and name files with a template such as `{artist}/{date}_{title}`.
 - Optionally remember saved artwork, mark it, and skip it in bulk downloads. The list stays in your browser.
+- Choose where downloads go on your first download: a folder, a Save As dialog each time, or your Downloads folder.
+- Change every option on one settings page, opened from the gear icon in the side panel.
 - Rescan the current page and follow navigation in the active tab.
 
 Results depend on the page and its image host. Deviation Lens does not control which image variants a source makes available.
 
+See what changed in each version in the [changelog](apps/web/changelog.html).
+
 ## Install
 
-Install the published [Chrome Web Store release](https://chromewebstore.google.com/detail/deviation-lens/gkcejfnaghdbhhggjndkhpnfajnfpigc), or try the current alpha from source:
+Install the published [Chrome Web Store release](https://chromewebstore.google.com/detail/deviation-lens/gkcejfnaghdbhhggjndkhpnfajnfpigc), or try the current version from source:
 
 1. Clone or download this repository.
 2. Open `chrome://extensions` in Chrome and enable **Developer mode**.
@@ -78,16 +82,16 @@ The repository recommends the Biome VS Code extension. Formatting and Biome fixe
 
 ## Package a release
 
-Set the version everywhere it appears, then run the packer from the repository root:
+Set the version everywhere it appears, add the new version to the [changelog](apps/web/changelog.html), then run the packer from the repository root:
 
 ```sh
-pnpm version:set 0.2.1-alpha.1
+pnpm version:set <new-version>
 pnpm pack:extension
 ```
 
-It creates versioned ZIP archives in `dist/extension/` and `apps/web/downloads/`. The packer reads the app version and checks that the extension package, manifest, and user-facing pages match it. `pnpm publish:extension` runs the same packaging step; it prepares the archive for manual submission and does not upload it to the Chrome Web Store.
+It creates versioned ZIP archives in `dist/extension/` and `apps/web/downloads/`. The packer reads the app version and checks that the extension package, manifest, and user-facing pages match it, and that the changelog has an entry for it. `pnpm publish:extension` runs the same packaging step; it prepares the archive for manual submission and does not upload it to the Chrome Web Store.
 
-The Chrome manifest uses a numeric version, while `version_name` displays the alpha label. Increase the numeric manifest version for each future extension release, because the Chrome Web Store only accepts a higher number. For example, the next store upload after `0.2.0-alpha.1` is `0.2.1-alpha.1`. Store listing copy and graphics are in [`apps/extension/store/`](apps/extension/store/). Those materials still need final screenshots, publisher contact details, and review against the submitted build.
+Versions are plain `major.minor.patch` numbers, because the Chrome manifest only accepts numbers. Deviation Lens stays in early access until `1.0.0`. Every store upload needs a higher version than the last, so use a new patch number for fixes and a new minor number for features. Store listing copy and graphics are in [`apps/extension/store/`](apps/extension/store/). Those materials still need final screenshots, publisher contact details, and review against the submitted build.
 
 ## Contributing
 

@@ -692,15 +692,6 @@ body {
 	overflow-wrap: anywhere;
 }
 
-.minSize select {
-	color: var(--text);
-	background: var(--panel);
-	border: 1px solid var(--line);
-	border-radius: 6px;
-	font: inherit;
-	padding: 1px 2px;
-}
-
 .noticeAction {
 	display: block;
 	margin-top: 6px;
@@ -716,4 +707,94 @@ body {
 	font-size: 14px;
 	color: var(--text);
 	margin-bottom: 4px;
+}
+
+.panelIcon {
+	display: grid;
+	place-items: center;
+	width: 30px;
+	height: 30px;
+	flex: none;
+	margin-left: auto;
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	background: var(--panel-2);
+	color: var(--muted);
+	cursor: pointer;
+	transition:
+		color 0.12s,
+		background 0.12s,
+		border-color 0.12s;
+}
+
+.panelIcon:hover,
+.panelIcon:focus-visible {
+	color: var(--text);
+	background: #2a3442;
+	border-color: #465366;
+}
+
+.saveChoice {
+	width: min(340px, calc(100vw - 32px));
+	padding: 16px;
+	color: var(--text);
+	background: var(--bg);
+	border: 1px solid var(--line);
+	border-radius: 14px;
+}
+
+.saveChoice::backdrop {
+	background: rgba(4, 7, 10, 0.72);
+}
+
+.saveChoice h2 {
+	margin: 0 0 6px;
+	font-size: 15px;
+}
+
+.saveChoice p {
+	margin: 0;
+	color: var(--muted);
+	font-size: 12px;
+	line-height: 1.45;
+}
+
+.saveChoiceOptions {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-top: 14px;
+}
+
+.saveChoiceOption {
+	display: block;
+	width: 100%;
+	padding: 10px 12px;
+	text-align: left;
+}
+
+.saveChoiceOption b,
+.saveChoiceOption small {
+	display: block;
+}
+
+.saveChoiceOption b {
+	font-size: 13px;
+}
+
+.saveChoiceOption small {
+	margin-top: 2px;
+	font-size: 11px;
+	font-weight: 400;
+	opacity: 0.8;
+}
+
+.saveChoice .saveChoiceError {
+	margin-top: 10px;
+	color: var(--amber);
+}
+
+.saveChoiceCancel {
+	display: block;
+	margin: 12px auto 0;
 }

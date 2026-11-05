@@ -149,9 +149,33 @@ const jobFinished = (popup, jobId) =>
 		const known = new Set();
 		await rememberExisting(popup, known);
 
-		// ---- Download all makes exactly one ZIP.
+		// ---- The first download asks where files should go, and cancelling that saves nothing.
+		const saveMode = () => popup.evaluate(() => chrome.storage.local.get("saveMode").then((s) => s.saveMode));
+		const choiceOpen = () => popup.evaluate(() => document.querySelector("#saveChoice").open);
+		assert.equal(
+			await popup.evaluate(() => !document.querySelector("#btnFolder") && !!document.querySelector("#btnOpenSettings")),
+			true,
+			"gear replaces the folder button",
+		);
+		assert.equal(await saveMode(), undefined, "no location is chosen on a new install");
+		for (const button of ["#btnAll", "#btnBest"]) {
+			await click(popup, button);
+			await waitFor(choiceOpen, 5000, `location choice after ${button}`);
+			await click(popup, "#btnChoiceCancel");
+			await waitFor(async () => !(await choiceOpen()), 5000, "choice to close");
+		}
+		await sleep(800);
+		assert.equal((await downloads(popup)).length, 0, "cancelling the choice saves nothing");
+		assert.equal(await saveMode(), undefined, "cancelling does not store a choice");
 		await click(popup, "#btnAll");
+		await waitFor(choiceOpen, 5000, "location choice");
+		await click(popup, "#btnChoiceDefault");
+		assert.equal(await waitFor(saveMode, 5000, "stored choice"), "default", "the choice is stored");
+		log("PASS first-download choice: cancel saves nothing, a choice is stored and continues the download");
+
+		// ---- Download all makes exactly one ZIP.
 		const allZip = await nextDownload(popup, known, "Download all ZIP");
+		assert.equal(await choiceOpen(), false, "the choice is not shown again");
 		log("zip:", path.basename(allZip.filename), allZip.fileSize);
 		assert.match(allZip.filename, /\.zip$/, "Download all saves a .zip");
 		assert.match(path.dirname(allZip.filename), /DeviantArt$/, "ZIP is saved in the DeviantArt folder");
@@ -184,6 +208,7 @@ const jobFinished = (popup, jobId) =>
 		// ---- Download best stays a plain image.
 		await click(popup, "#btnBest");
 		const best = await nextDownload(popup, known, "Download best");
+		assert.equal(await choiceOpen(), false, "single files do not ask again");
 		assert.doesNotMatch(best.filename, /\.zip$/, "Download best is not zipped");
 		assert.ok(isImage(fs.readFileSync(best.filename)), "Download best saved an image");
 		log("PASS Download best: plain file", path.basename(best.filename));
@@ -303,20 +328,81 @@ const jobFinished = (popup, jobId) =>
 		assert.equal((await downloads(popup)).filter((d) => !known.has(d.id)).length, 0, "Cancel button saves nothing");
 		log("PASS panel Cancel button");
 
-		// ---- The minimum-size filter hides small images but keeps unknown sizes.
+		// ---- The settings page opens from the gear and controls the results, with a custom dropdown.
 		const before = await rowCount(popup);
-		const dims = await popup.evaluate(() => Array.from(document.querySelectorAll(".dims")).map((d) => d.textContent));
-		await popup.select("#selMinSize", "3840");
-		await sleep(300);
+		await click(popup, "#btnOpenSettings");
+		const settingsTarget = await browser.waitForTarget((t) => t.url().endsWith("/saver.html"), { timeout: 10000 });
+		const settings = await settingsTarget.page();
+		await settings.waitForSelector("#minSizeDropdown .dropdownButton");
+		const stored = (key) => settings.evaluate((k) => chrome.storage.local.get(k).then((s) => s[k]), key);
+		assert.equal(await settings.evaluate(() => document.querySelectorAll("select").length), 0, "no native dropdowns");
+		await settings.click("#minSizeDropdown .dropdownButton");
+		assert.equal(
+			await settings.evaluate(() => document.querySelector("#minSizeDropdown .dropdownList").classList.contains("hidden")),
+			false,
+			"dropdown opens",
+		);
+		await settings.screenshot({ path: path.join(OUT, "settings_dropdown.png"), fullPage: true });
+		const options = await settings.$$("#minSizeDropdown .dropdownOption");
+		assert.equal(options.length, 5, "all sizes are offered");
+		await options[4].click();
+		assert.equal(await waitFor(() => stored("minSize"), 3000, "stored size"), 3840, "mouse selection is saved");
+		assert.equal(
+			await settings.evaluate(() => document.querySelector("#minSizeDropdown .dropdownValue").textContent),
+			"4K+",
+			"dropdown shows the choice",
+		);
+		await settings.focus("#minSizeDropdown .dropdownButton");
+		await settings.keyboard.press("Enter");
+		await settings.keyboard.press("Home");
+		await settings.keyboard.press("ArrowDown");
+		await settings.keyboard.press("Escape");
+		assert.equal(await stored("minSize"), 3840, "Escape keeps the old value");
+		await settings.keyboard.press("ArrowDown");
+		await settings.keyboard.press("Home");
+		await settings.keyboard.press("Enter");
+		await waitFor(async () => (await stored("minSize")) === 0, 3000, "keyboard selection");
+		assert.equal(
+			await settings.evaluate(() => document.querySelector('[role="combobox"]').getAttribute("aria-expanded")),
+			"false",
+			"dropdown closes after choosing",
+		);
+		for (const id of ["chkBestOnly", "chkSmallVariants", "chkExplore", "chkAnyPage", "chkZip", "chkRemember"]) {
+			assert.ok(await settings.$(`#${id}`), `${id} is on the settings page`);
+		}
+		const about = await settings.evaluate(() => ({
+			version: document.querySelector("#aboutVersion").textContent,
+			href: document.querySelector("#linkChangelog").href,
+		}));
+		assert.match(about.version, /^\d+\.\d+\.\d+/, "settings shows the version");
+		assert.match(about.href, /\/changelog\.html$/, "settings links to the changelog");
+		await settings.screenshot({ path: path.join(OUT, "settings_page.png"), fullPage: true });
+		await settings.close();
+		await tab.bringToFront();
+		await waitForRows(popup);
+		assert.equal(await rowCount(popup), before, "panel returns with every image");
+		log("PASS settings page: gear opens it, custom dropdown works by mouse and keyboard");
+
+		// ---- Settings reach the open panel without touching it.
+		await setPrefs(popup, { minSize: 3840 });
+		await sleep(400);
 		const filtered = await rowCount(popup);
-		log(`filter: ${before} -> ${filtered} rows, dims ${dims.join(" | ")}`);
 		assert.ok(filtered < before, "4K+ filter hides smaller images");
-		assert.equal(await popup.evaluate(() => chrome.storage.local.get("minSize").then((s) => s.minSize)), 3840, "filter is saved");
 		if (!filtered) assert.match(await text(popup, "#list"), /No images match your filters/, "empty filter explains itself");
-		await popup.select("#selMinSize", "0");
-		await sleep(300);
+		assert.match(await text(popup, "#summary"), /Filters: 4K\+ only/, "panel says a filter is active");
+		await setPrefs(popup, { minSize: 0 });
+		await sleep(400);
 		assert.equal(await rowCount(popup), before, "clearing the filter restores rows");
-		log("PASS minimum-size filter");
+		await setPrefs(popup, { smallVariants: false });
+		await sleep(400);
+		const withoutSmall = await rowCount(popup);
+		assert.ok(withoutSmall < before, "turning off Small variants hides rows");
+		assert.match(await text(popup, "#summary"), /small variants hidden/, "panel says small variants are hidden");
+		await setPrefs(popup, { smallVariants: true });
+		await sleep(400);
+		assert.equal(await rowCount(popup), before, "turning Small variants back on restores rows");
+		assert.doesNotMatch(await text(popup, "#summary"), /Filters:/, "no filter note without filters");
+		log(`PASS live settings: 4K+ ${before} -> ${filtered} rows, no small variants -> ${withoutSmall}`);
 
 		// ---- Filename templates create folders inside the ZIP.
 		await setPrefs(popup, { filenameTemplate: "{artist}/{width}x{height}_{title}" });
@@ -424,6 +510,66 @@ const jobFinished = (popup, jobId) =>
 		assert.equal((await downloads(popup)).filter((d) => !known.has(d.id)).length, 0, "custom mode does not use the downloads API");
 		await setPrefs(popup, { saveMode: "default" });
 		log("PASS custom folder: ZIP written from the offscreen document without overwriting");
+
+		// ---- Choosing a folder at the first download writes there. The picker is replaced, as a test cannot operate it.
+		await popup.evaluate(() => {
+			window.showDirectoryPicker = () => navigator.storage.getDirectory();
+			return chrome.storage.local.remove("saveMode");
+		});
+		await sleep(300);
+		await click(popup, "#btnAll");
+		await waitFor(choiceOpen, 5000, "choice for a folder");
+		await click(popup, "#btnChoiceFolder");
+		await waitFor(async () => (await saveMode()) === "custom", 5000, "folder choice stored");
+		const pickedFolderZip = await waitFor(
+			() =>
+				popup.evaluate(async () => {
+					const root = await navigator.storage.getDirectory();
+					for await (const name of root.keys()) if (/^dutteart_.+\.zip$/i.test(name)) return name;
+					return null;
+				}),
+			60000,
+			"ZIP in the chosen folder",
+		);
+		assert.equal((await downloads(popup)).filter((d) => !known.has(d.id)).length, 0, "the chosen folder does not use the downloads API");
+		log("PASS folder chosen at first download:", pickedFolderZip);
+		await waitFor(() => popup.evaluate(() => !state.jobId), 30000, "folder job to finish");
+
+		// ---- A closed picker keeps the choice open.
+		await popup.evaluate(() => {
+			window.showDirectoryPicker = () => Promise.reject(new DOMException("closed", "AbortError"));
+			return chrome.storage.local.remove("saveMode");
+		});
+		await click(popup, "#btnBest");
+		await waitFor(choiceOpen, 5000, "choice after clearing");
+		await click(popup, "#btnChoiceFolder");
+		await sleep(400);
+		assert.equal(await choiceOpen(), true, "closing the picker leaves the choice open");
+		await click(popup, "#btnChoiceCancel");
+		log("PASS closed picker keeps the choice open");
+
+		// ---- Ask every time is stored, and a ZIP then asks for a location.
+		await click(popup, "#btnAll");
+		await waitFor(choiceOpen, 5000, "choice for ask");
+		await popup.screenshot({ path: path.join(OUT, "first_download_choice.png") });
+		await click(popup, "#btnChoiceAsk");
+		await waitFor(async () => (await saveMode()) === "ask", 5000, "ask choice stored");
+		log("PASS ask every time is stored");
+		await waitFor(() => popup.evaluate(() => !!state.jobId), 5000, "ZIP job after choosing ask");
+		const askJob = await popup.evaluate(() => state.jobId);
+		await waitFor(
+			async () => {
+				const st = await sendMessage(popup, { type: "OS_STATUS", jobId: askJob });
+				return st?.saveMode === "ask" && st.phase === "saving";
+			},
+			60000,
+			"ZIP to reach the save step in ask mode",
+		);
+		await click(popup, "#btnCancelJob");
+		await waitFor(() => popup.evaluate(() => !state.jobId), 15000, "ask job to end");
+		for (const d of await downloads(popup)) known.add(d.id);
+		await setPrefs(popup, { saveMode: "default" });
+		log("PASS ZIP uses ask mode:", await text(popup, "#progress"));
 
 		// ---- A profile date range makes one ZIP, and with history on a second run has nothing left to fetch.
 		await setPrefs(popup, { rememberSaved: true });

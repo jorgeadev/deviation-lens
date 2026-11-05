@@ -1,56 +1,5 @@
 const $ = (s) => document.querySelector(s);
-const { naming, history: savedHistory } = globalThis.DeviationLens;
-
-function openIdb() {
-	return new Promise((resolve, reject) => {
-		const req = indexedDB.open("da-image-hunter", 1);
-		req.onupgradeneeded = () => {
-			if (!req.result.objectStoreNames.contains("handles")) req.result.createObjectStore("handles");
-		};
-		req.onsuccess = () => resolve(req.result);
-		req.onerror = () => reject(req.error);
-	});
-}
-
-function idbPut(db, store, value, key) {
-	return new Promise((resolve, reject) => {
-		const tx = db.transaction(store, "readwrite");
-		const rq = tx.objectStore(store).put(value, key);
-		rq.onsuccess = () => resolve();
-		rq.onerror = () => reject(rq.error);
-	});
-}
-
-function idbGet(db, store, key) {
-	return new Promise((resolve, reject) => {
-		const tx = db.transaction(store, "readonly");
-		const rq = tx.objectStore(store).get(key);
-		rq.onsuccess = () => resolve(rq.result);
-		rq.onerror = () => reject(rq.error);
-	});
-}
-
-async function getHandle() {
-	try {
-		const db = await openIdb();
-		try {
-			return (await idbGet(db, "handles", "folder")) || null;
-		} finally {
-			db.close();
-		}
-	} catch (_e) {
-		return null;
-	}
-}
-
-async function setHandle(handle) {
-	const db = await openIdb();
-	try {
-		await idbPut(db, "handles", handle, "folder");
-	} finally {
-		db.close();
-	}
-}
+const { naming, history: savedHistory, folder, createDropdown } = globalThis.DeviationLens;
 
 function setStatus(text, kind) {
 	const s = $("#status");
@@ -63,7 +12,7 @@ const FS_SUPPORTED = typeof window.showDirectoryPicker === "function";
 
 async function refresh() {
 	const stored = await chrome.storage.local.get(["saveMode", "folderName"]);
-	let saveMode = stored.saveMode || "default";
+	let saveMode = stored.saveMode || "";
 	const folderName = stored.folderName || "";
 	if (!FS_SUPPORTED && saveMode === "custom") {
 		saveMode = "default";
@@ -81,11 +30,16 @@ async function refresh() {
 	$("#btnPick").title = FS_SUPPORTED ? "" : "Not supported in this browser - click for alternatives";
 	$("#fsNote").classList.toggle("hidden", FS_SUPPORTED);
 	$("#folderName").textContent = folderName || "none";
-	const label =
-		saveMode === "custom" ? folderName || "Custom folder" : saveMode === "ask" ? "Ask every time" : "Browser default (Downloads\\DeviantArt)";
+	const label = !saveMode
+		? "Not chosen yet. You will be asked at your first download."
+		: saveMode === "custom"
+			? folderName || "Custom folder"
+			: saveMode === "ask"
+				? "Ask every time"
+				: "Browser default (Downloads\\DeviantArt)";
 	$("#curMode").textContent = label;
 
-	const handle = await getHandle();
+	const handle = await folder.getFolderHandle();
 	if (saveMode === "custom" && !handle && FS_SUPPORTED) {
 		saveMode = "default";
 		await chrome.storage.local.set({ saveMode: "default" });
@@ -117,7 +71,7 @@ async function chooseFolder() {
 	try {
 		setStatus("Waiting for the folder picker…");
 		const handle = await window.showDirectoryPicker({ mode: "readwrite" });
-		await setHandle(handle);
+		await folder.setFolderHandle(handle);
 		await chrome.storage.local.set({ saveMode: "custom", folderName: handle.name });
 		setStatus(`Folder "${handle.name}" selected. Downloads will be written there.`, "ok");
 	} catch (e) {
@@ -130,7 +84,7 @@ async function chooseFolder() {
 document.querySelectorAll('input[name="mode"]').forEach((radio) => {
 	radio.addEventListener("change", async () => {
 		if (radio.value === "custom") {
-			const handle = await getHandle();
+			const handle = await folder.getFolderHandle();
 			if (!handle) {
 				setStatus('Click "Choose folder…" to pick the custom folder first.', "err");
 				await chrome.storage.local.set({ saveMode: "default" });
@@ -150,7 +104,7 @@ document.querySelectorAll('input[name="mode"]').forEach((radio) => {
 $("#btnPick").addEventListener("click", chooseFolder);
 
 $("#btnGrant").addEventListener("click", async () => {
-	const handle = await getHandle();
+	const handle = await folder.getFolderHandle();
 	if (!handle) return;
 	try {
 		const perm = await handle.requestPermission({ mode: "readwrite" });
@@ -215,6 +169,22 @@ $("#chkZip").addEventListener("change", () => {
 	setStatus($("#chkZip").checked ? "Multiple images will be saved as one ZIP." : "Multiple images will be saved as separate files.", "ok");
 });
 
+const SIMPLE_TOGGLES = { chkBestOnly: "bestOnly", chkSmallVariants: "smallVariants", chkExplore: "showExploreImages", chkAnyPage: "allowAnyPage" };
+
+for (const [id, key] of Object.entries(SIMPLE_TOGGLES)) {
+	$(`#${id}`).addEventListener("change", () => {
+		chrome.storage.local.set({ [key]: $(`#${id}`).checked });
+	});
+}
+
+const MIN_SIZE_OPTIONS = [
+	{ value: 0, label: "Any size", hint: "Show every image" },
+	{ value: 1280, label: "HD+", hint: "1280 px or larger" },
+	{ value: 1920, label: "Full HD+", hint: "1920 px or larger" },
+	{ value: 2560, label: "QHD+", hint: "2560 px or larger" },
+	{ value: 3840, label: "4K+", hint: "3840 px or larger" },
+];
+
 $("#inpTemplate").addEventListener("input", handleTemplateInput);
 
 $("#btnTemplateReset").addEventListener("click", () => {
@@ -247,13 +217,39 @@ chrome.runtime.onMessage.addListener((message) => {
 });
 
 async function initDownloadOptions() {
-	const stored = await chrome.storage.local.get(["zipDownloads", "filenameTemplate", "rememberSaved"]);
+	const stored = await chrome.storage.local.get([
+		"zipDownloads",
+		"filenameTemplate",
+		"rememberSaved",
+		"minSize",
+		"bestOnly",
+		"smallVariants",
+		"showExploreImages",
+		"allowAnyPage",
+	]);
+	$("#chkBestOnly").checked = stored.bestOnly === true;
+	$("#chkSmallVariants").checked = stored.smallVariants !== false;
+	$("#chkExplore").checked = stored.showExploreImages === true;
+	$("#chkAnyPage").checked = stored.allowAnyPage === true;
+	createDropdown($("#minSizeDropdown"), {
+		labelledBy: "minSizeLabel",
+		options: MIN_SIZE_OPTIONS,
+		value: Number(stored.minSize) || 0,
+		onChange: (minSize) => chrome.storage.local.set({ minSize }),
+	});
 	$("#chkZip").checked = stored.zipDownloads !== false;
 	$("#inpTemplate").value = stored.filenameTemplate || "";
 	$("#chkRemember").checked = stored.rememberSaved === true;
 	showTemplatePreview(stored.filenameTemplate || "");
 	refreshHistoryCount();
 }
+
+// The panel can set the location while this page is open, through the first-download choice.
+chrome.storage.onChanged.addListener((changes, area) => {
+	if (area === "local" && ("saveMode" in changes || "folderName" in changes)) refresh();
+});
+
+$("#aboutVersion").textContent = chrome.runtime.getManifest().version;
 
 initDownloadOptions();
 refresh();

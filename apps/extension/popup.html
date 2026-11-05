@@ -11,54 +11,15 @@
     <header class="top">
       <img src="icons/icon48.png" alt="" class="logo">
       <div class="titles">
-        <div class="app-title"><div class="app">Deviation Lens</div><span class="app-version" title="Version 0.2.0-alpha.1">0.2.0-alpha.1</span></div>
+        <div class="app-title"><div class="app">Deviation Lens</div><span class="app-version" title="Version 0.2.0">0.2.0</span></div>
         <div class="page" id="pageMeta">Scanning the page…</div>
       </div>
+      <button id="btnOpenSettings" class="panelIcon" type="button" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-2.82 1.17V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-2.82-1.17l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 3.26 14H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.17-2.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 10 3.09V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 2.82 1.17l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 20.91 10H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     </header>
 
     <div class="toolbar">
       <button type="button" id="btnRescan" class="btn">Rescan</button>
       <button type="button" id="btnReveal" class="btn" title="Clicks the artwork on the page so DeviantArt reveals the full-resolution viewer image">Reveal full</button>
-      <button type="button" id="btnFolder" class="btn folderBtn" title="Choose where downloads are saved">
-        <span class="folderIcon"></span><span id="folderLabel">Folder: Default</span>
-      </button>
-      <label class="chk" id="chkBestWrap" title="Show only the best image of every artwork found on this page">
-        <input type="checkbox" id="chkBest"> Best only
-      </label>
-      <label class="chk" title="Show scaled/cropped thumbnails found in the main view">
-        <input type="checkbox" id="chkSmall" checked> Small variants
-      </label>
-      <label class="chk minSize" title="Hide images smaller than this on their longest side. Images with unknown dimensions stay visible.">
-        Min size
-        <select id="selMinSize">
-          <option value="0">Any</option>
-          <option value="1280">HD+</option>
-          <option value="1920">FHD+</option>
-          <option value="2560">QHD+</option>
-          <option value="3840">4K+</option>
-        </select>
-      </label>
-    </div>
-
-    <div class="scanSettings">
-      <div class="exploreSetting">
-        <label class="scanOption" title="Include Explore Recent Deviations, Explore Community Features, and From Deviants You Watch">
-          <input type="checkbox" id="chkExplore">
-          <span class="settingCopy">
-            <span class="settingTitle">Include Explore sections</span>
-            <span class="settingDescription">Recent Deviations, Community Features, and posts from deviants you watch.</span>
-          </span>
-        </label>
-      </div>
-      <div class="exploreSetting">
-        <label class="scanOption" title="Allow scanning pages outside DeviantArt. Chrome will ask for access to each site when you scan it.">
-          <input type="checkbox" id="chkAnyPage">
-          <span class="settingCopy">
-            <span class="settingTitle">Find images on any page</span>
-            <span class="settingDescription">Scan other websites after granting Chrome access.</span>
-          </span>
-        </label>
-      </div>
     </div>
 
     <details id="rangeBox" class="rangeBox hidden">
@@ -96,8 +57,20 @@
     </footer>
   </div>
 
+  <dialog id="saveChoice" class="saveChoice" aria-labelledby="saveChoiceTitle">
+    <h2 id="saveChoiceTitle">Where should downloads go?</h2>
+    <p>This applies to single images and ZIP files. You can change it at any time in Settings.</p>
+    <div class="saveChoiceOptions">
+      <button type="button" id="btnChoiceFolder" class="btn primary saveChoiceOption"><b>Choose a folder</b><small>Files save straight into a folder you pick.</small></button>
+      <button type="button" id="btnChoiceAsk" class="btn saveChoiceOption"><b>Ask every time</b><small>A Save As dialog opens for each image or ZIP.</small></button>
+      <button type="button" id="btnChoiceDefault" class="btn saveChoiceOption"><b>Use my Downloads folder</b><small>Files save to a DeviantArt folder inside it.</small></button>
+    </div>
+    <p id="saveChoiceError" class="saveChoiceError hidden" role="alert"></p>
+    <button type="button" id="btnChoiceCancel" class="btn ghost saveChoiceCancel">Cancel this download</button>
+  </dialog>
   <script src="lib/naming.js"></script>
   <script src="lib/history.js"></script>
+  <script src="lib/folder.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
