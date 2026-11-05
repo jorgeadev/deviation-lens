@@ -12,7 +12,6 @@ export const VERSION_RULES = [
 	{ file: "apps/extension/manifest.json", patterns: [PACKAGE_VERSION] },
 	{ file: "apps/extension/popup.html", patterns: BADGE },
 	{ file: "apps/extension/saver.html", patterns: BADGE },
-	{ file: "apps/extension/sidebar.html", patterns: BADGE },
 	{ file: "apps/extension/sidepanel.html", patterns: BADGE },
 	{ file: "apps/web/package.json", patterns: [PACKAGE_VERSION] },
 	{ file: "apps/web/index.html", patterns: [...BADGE, /(downloads\/deviation-lens-)([^"]+)(\.zip)/g] },

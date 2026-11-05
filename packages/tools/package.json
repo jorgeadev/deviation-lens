@@ -11,7 +11,6 @@
 		"e2e:zip": "node scripts/e2e/e2e-zip.js",
 		"e2e:profile": "node scripts/e2e/e2e-profile.js",
 		"e2e:visual": "node scripts/e2e/visual-popup.js",
-		"e2e:sidebar": "node scripts/e2e/e2e-sidebar.js",
 		"icons": "pwsh -NoProfile -File scripts/assets/make-icons.ps1"
 	},
 	"dependencies": {

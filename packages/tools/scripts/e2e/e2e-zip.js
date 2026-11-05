@@ -7,7 +7,8 @@ const puppeteer = require("puppeteer-core");
 const { parseZip } = require("../lib/zip-reader");
 
 const TOOLS_DIR = path.resolve(__dirname, "../..");
-const EXT = path.resolve(TOOLS_DIR, "..", "..", "apps", "extension");
+// Set DEVIATION_LENS_EXT to an extracted release archive to test exactly what will be published.
+const EXT = process.env.DEVIATION_LENS_EXT ? path.resolve(process.env.DEVIATION_LENS_EXT) : path.resolve(TOOLS_DIR, "..", "..", "apps", "extension");
 const OUT = path.join(TOOLS_DIR, "out");
 const DL = path.join(OUT, "downloads-zip");
 const PROFILE = path.join(OUT, "profile-zip");
@@ -82,7 +83,7 @@ function isImage(data) {
 // which matches the real side panel sitting beside the page.
 async function openPanel(browser, extId, artworkTab) {
 	const popup = await browser.newPage();
-	await popup.goto(`chrome-extension://${extId}/popup.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+	await popup.goto(`chrome-extension://${extId}/sidepanel.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 	await sleep(500);
 	await artworkTab.bringToFront();
 	return popup;

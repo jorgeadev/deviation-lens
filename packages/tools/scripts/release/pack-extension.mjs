@@ -29,7 +29,8 @@ if (!changelog.includes(`id="v${version}"`)) throw new Error(`${CHANGELOG_PAGE} 
 const files = [];
 async function collectFiles(dir, relativeDir = "") {
 	for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
-		if (entry.name === "package.json" || entry.name === "store") continue;
+		// Not part of the extension: package metadata, store materials, and a page only test scripts open.
+		if (entry.name === "package.json" || entry.name === "store" || entry.name === "popup.html") continue;
 		const absolutePath = path.join(dir, entry.name);
 		const relativePath = path.posix.join(relativeDir, entry.name);
 		if (entry.isDirectory()) {

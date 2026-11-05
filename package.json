@@ -18,8 +18,7 @@
 		"test:e2e": "pnpm --filter @deviation-lens/tools run e2e",
 		"test:e2e:zip": "pnpm --filter @deviation-lens/tools run e2e:zip",
 		"test:e2e:profile": "pnpm --filter @deviation-lens/tools run e2e:profile",
-		"test:visual": "pnpm --filter @deviation-lens/tools run e2e:visual",
-		"test:sidebar": "pnpm --filter @deviation-lens/tools run e2e:sidebar"
+		"test:visual": "pnpm --filter @deviation-lens/tools run e2e:visual"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.15"

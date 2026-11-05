@@ -10,4 +10,6 @@
 - `screenshots/04-deviation-lens-generated.png`: 1280 × 800, 24-bit RGB PNG without alpha; an AI-generated screenshot illustration using the current name and settings, not a live capture.
 - `screenshots/feature-set/*.png`: four distinct AI-generated feature illustrations covering discovery, quality comparison, download choices, and scan settings; each is 1280 × 800, 24-bit RGB PNG without alpha. These illustrate supported features and are not live captures.
 
+`screenshots/release/*.png` are the current listing screenshots: 1280 × 800, 24-bit RGB PNG without alpha, captured from the real extension UI by `packages/tools/scripts/assets/make-store-screenshots.js`. They use abstract sample images and sample names, so no third-party artwork appears in them. Re-run the script when the UI changes, then save the results as RGB so they have no alpha channel, which the store requires.
+
 The original three screenshots are real captures, but they predate the Deviation Lens label and the Explore/any-page settings. Refresh them from the final release before uploading. Do not treat the generated illustration or illustrative web-page preview as a live extension capture.

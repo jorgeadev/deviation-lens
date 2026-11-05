@@ -38,11 +38,10 @@ Find artwork images on the current page, compare their available dimensions and 
 
 ### Permission justifications
 
-- **activeTab**: Identifies the current tab and gives the extension temporary access to the page after the user opens the extension, so it can scan that page.
 - **downloads**: Saves image files after the user chooses a download action, using Chrome's download manager.
 - **offscreen**: Builds a ZIP file in the browser from the images the user chose to download. Service workers cannot create the file URL that the downloads API needs, and an offscreen document also lets the ZIP finish if the side panel is closed. It closes when no longer needed.
-- **Host permissions**: Access to DeviantArt pages lets the extension scan DeviantArt artwork and gallery pages. Access to WixMP image hosts lets it inspect and download the images served for that artwork. Access to other sites is optional and requested only after the user enables “Find images on any page” and grants Chrome permission for the site being scanned.
-- **scripting**: Injects the packaged `content.js` scanner into the current tab when the user opens or rescans the extension. On other sites, scanning also requires the user's optional site grant.
+- **Host permissions**: HTTPS access to DeviantArt pages lets the extension scan DeviantArt artwork and gallery pages. HTTPS access to WixMP image hosts lets it inspect and download the images served for that artwork. Access to other sites is optional and requested only after the user enables “Find images on any page” and grants Chrome permission for the site being scanned.
+- **scripting**: Injects the packaged `content.js` scanner into a DeviantArt tab that was opened before the extension was installed or updated, and into other sites only after the user's optional site grant.
 - **sidePanel**: Opens the image results interface beside the current browser page.
 - **storage**: Stores the user's scan and download preferences, including Explore filtering, image options, minimum size, ZIP and file name settings, and download mode.
 - **tabs**: Reads the active tab URL, follows active-tab changes and navigation while the extension is open, and opens image links and the settings page.

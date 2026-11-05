@@ -40,14 +40,13 @@ The [extension manifest](apps/extension/manifest.json) lists the permissions use
 
 | Permission | Purpose |
 | --- | --- |
-| `activeTab` | Access the page you choose to scan. |
-| `scripting` | Run the page scanner after you use the extension. |
+| `scripting` | Run the page scanner in a tab opened before the extension, or on a site you approved. |
 | `sidePanel` | Show scan results beside the page. |
 | `downloads` | Save images you choose through Chrome. |
 | `offscreen` | Build ZIP files in the browser, and let them finish if the side panel closes. |
 | `storage` | Save extension preferences. |
 | `tabs` | Identify the active tab and update results when its page changes. |
-| DeviantArt and WixMP host access | Scan supported DeviantArt pages and access related image hosts. |
+| DeviantArt and WixMP host access (HTTPS) | Scan supported DeviantArt pages and access related image hosts. |
 | Optional access to other sites | Scan a site only after you enable **Find images on any page** and grant Chrome access. |
 
 The extension processes the page details needed to find images, such as image URLs and dimensions, in your browser. Scan results are not sent to a developer-operated service. Preferences are stored locally, as is the optional saved-image history, which is off by default. When you download an image or check its file size, Chrome may request it from the image's source host, which has its own privacy practices.
@@ -70,13 +69,12 @@ Common commands:
 | `pnpm check:biome` | Run Biome formatting and lint checks. |
 | `pnpm format` | Format supported files with Biome. |
 | `pnpm lint` | Run Biome lint rules. |
-| `pnpm test:unit` | Run unit tests for the ZIP writer and file naming. |
+| `pnpm test:unit` | Run unit tests for the ZIP writer, file naming, and the permissions list. |
 | `pnpm test:smoke` | Run the save-folder support smoke check. |
 | `pnpm test:e2e` | Run browser end-to-end checks. |
 | `pnpm test:e2e:zip` | Run browser checks for ZIP downloads, filters, templates, and history. |
 | `pnpm test:e2e:profile` | Run profile-page checks. |
 | `pnpm test:visual` | Run visual checks. |
-| `pnpm test:sidebar` | Run side-panel checks. |
 
 The repository recommends the Biome VS Code extension. Formatting and Biome fixes run on save when that extension is installed. Browser test binaries and generated output are local files under `packages/tools/browsers/` and `packages/tools/out/`.
 
@@ -91,7 +89,7 @@ pnpm pack:extension
 
 It creates versioned ZIP archives in `dist/extension/` and `apps/web/downloads/`. The packer reads the app version and checks that the extension package, manifest, and user-facing pages match it, and that the changelog has an entry for it. `pnpm publish:extension` runs the same packaging step; it prepares the archive for manual submission and does not upload it to the Chrome Web Store.
 
-Versions are plain `major.minor.patch` numbers, because the Chrome manifest only accepts numbers. Deviation Lens stays in early access until `1.0.0`. Every store upload needs a higher version than the last, so use a new patch number for fixes and a new minor number for features. Store listing copy and graphics are in [`apps/extension/store/`](apps/extension/store/). Those materials still need final screenshots, publisher contact details, and review against the submitted build.
+Versions are plain `major.minor.patch` numbers, because the Chrome manifest only accepts numbers. Deviation Lens stays in early access until `1.0.0`. Every store upload needs a higher version than the last, so use a new patch number for fixes and a new minor number for features. Store listing copy, graphics, and the [release checklist](apps/extension/store/README.md) are in [`apps/extension/store/`](apps/extension/store/).
 
 ## Contributing
 

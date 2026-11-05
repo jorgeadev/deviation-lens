@@ -161,36 +161,6 @@ body {
 	background: transparent;
 }
 
-.chk {
-	color: var(--muted);
-	font-size: 11.5px;
-	display: flex;
-	align-items: center;
-	gap: 4px;
-	cursor: pointer;
-	user-select: none;
-	white-space: nowrap;
-}
-
-.folderBtn {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-}
-
-.folderBtn .folderIcon {
-	display: flex;
-	color: var(--green);
-}
-
-.folderBtn .folderIcon svg {
-	display: block;
-}
-
-.toolbar .chk:first-of-type {
-	margin-left: auto;
-}
-
 .scanSettings {
 	margin: 8px 10px 0;
 	overflow: hidden;
@@ -293,10 +263,6 @@ body {
 	font-size: 10.5px;
 	line-height: 1.4;
 	white-space: normal;
-}
-
-.chk input {
-	accent-color: var(--green);
 }
 
 .rangeBox {

@@ -22,23 +22,17 @@
 	"background": {
 		"service_worker": "background.js"
 	},
-	"permissions": ["activeTab", "sidePanel", "scripting", "downloads", "offscreen", "storage", "tabs"],
+	"permissions": ["sidePanel", "scripting", "downloads", "offscreen", "storage", "tabs"],
 	"optional_host_permissions": ["*://*/*"],
 	"side_panel": {
 		"default_path": "sidepanel.html"
 	},
-	"host_permissions": ["*://*.deviantart.com/*", "*://*.wixmp.com/*"],
+	"host_permissions": ["https://*.deviantart.com/*", "https://*.wixmp.com/*"],
 	"content_scripts": [
 		{
-			"matches": ["*://*.deviantart.com/*"],
+			"matches": ["https://*.deviantart.com/*"],
 			"js": ["content.js"],
 			"run_at": "document_idle"
-		}
-	],
-	"web_accessible_resources": [
-		{
-			"resources": ["popup.css", "sidebar.css", "sidebar.html", "icons/*"],
-			"matches": ["*://*.deviantart.com/*"]
 		}
 	]
 }
