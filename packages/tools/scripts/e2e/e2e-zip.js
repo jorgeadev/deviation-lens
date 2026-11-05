@@ -425,6 +425,55 @@ const jobFinished = (popup, jobId) =>
 		await setPrefs(popup, { saveMode: "default" });
 		log("PASS custom folder: ZIP written from the offscreen document without overwriting");
 
+		// ---- A profile date range makes one ZIP, and with history on a second run has nothing left to fetch.
+		await setPrefs(popup, { rememberSaved: true });
+		await tab.goto("https://www.deviantart.com/dutteart", { waitUntil: "networkidle2", timeout: 90000 });
+		await waitFor(() => popup.evaluate(() => !document.querySelector("#rangeBox").classList.contains("hidden")), 30000, "range box");
+		const rangeFrom = new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10);
+		const rangeTo = new Date().toISOString().slice(0, 10);
+		await popup.evaluate(
+			(from, to) => {
+				document.querySelector("#rangeFrom").value = from;
+				document.querySelector("#rangeTo").value = to;
+				document.querySelector("#btnRangeScan").click();
+			},
+			rangeFrom,
+			rangeTo,
+		);
+		const rangeStatus = await waitFor(
+			async () => {
+				const value = await text(popup, "#rangeStatus");
+				return /image\(s\) between|failed/.test(value) ? value : null;
+			},
+			240000,
+			"range scan",
+			1000,
+		);
+		log("range:", rangeStatus);
+		assert.match(rangeStatus, /^[1-9]\d* image\(s\)/, "range scan found images");
+		// Three images are enough to prove the path, and keep the load on the image host low.
+		const rangeCount = await popup.evaluate(() => {
+			state.range.items = state.range.items.slice(0, 3);
+			updateRangeButton();
+			return state.range.items.length;
+		});
+		assert.equal(await text(popup, "#btnRangeDownload"), `Download (${rangeCount})`, "range button counts the images");
+		await click(popup, "#btnRangeDownload");
+		const rangeZip = await nextDownload(popup, known, "range ZIP");
+		assert.equal(path.basename(rangeZip.filename), `dutteart_${rangeFrom}_${rangeTo}.zip`, "range ZIP is named after the dates");
+		const rangeFiles = parseZip(fs.readFileSync(rangeZip.filename));
+		assert.equal(rangeFiles.length, rangeCount + 1, "range ZIP has every image and the manifest");
+		for (const row of parseCsv(rangeFiles.find((f) => f.name === "manifest.csv").data)) {
+			assert.match(row.date, /^\d{4}-\d{2}-\d{2}$/, "manifest records the published date");
+			assert.match(row.file, /^dutteart_\d{4}-\d{2}-\d{2}_.+\.\w+$/i, "range files keep their automatic names");
+			assert.match(row.source_page, /deviantart\.com\/.+\/art\//, "manifest links to the deviation");
+		}
+		await waitFor(async () => (await text(popup, "#btnRangeDownload")) === "Download (0)", 15000, "saved range images to be excluded");
+		assert.equal(await popup.evaluate(() => document.querySelector("#btnRangeDownload").disabled), true, "nothing left to download");
+		assert.equal(await historyCount(), rangeCount, "range images are remembered");
+		await setPrefs(popup, { rememberSaved: false });
+		log("PASS profile range:", path.basename(rangeZip.filename));
+
 		// ---- The offscreen document closes once idle.
 		const offscreenOpen = () =>
 			popup.evaluate(() => chrome.runtime.getContexts({ contextTypes: ["OFFSCREEN_DOCUMENT"] }).then((c) => c.length > 0));

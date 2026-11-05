@@ -13,6 +13,9 @@ Deviation Lens is the Chrome extension in [`apps/extension/`](apps/extension/) f
 - Exclude images from DeviantArt Explore sections by default, or opt in to include them. The preference is saved.
 - Optionally scan other websites after enabling **Find images on any page** and granting Chrome access to that site.
 - Select images to download, download all results, or copy image URLs.
+- Save two or more images as one ZIP, with a `manifest.csv` crediting each file's artist and source. A setting restores separate files.
+- Hide images below a minimum size, and name files with a template such as `{artist}/{date}_{title}`.
+- Optionally remember saved artwork, mark it, and skip it in bulk downloads. The list stays in your browser.
 - Rescan the current page and follow navigation in the active tab.
 
 Results depend on the page and its image host. Deviation Lens does not control which image variants a source makes available.
@@ -37,12 +40,13 @@ The [extension manifest](apps/extension/manifest.json) lists the permissions use
 | `scripting` | Run the page scanner after you use the extension. |
 | `sidePanel` | Show scan results beside the page. |
 | `downloads` | Save images you choose through Chrome. |
+| `offscreen` | Build ZIP files in the browser, and let them finish if the side panel closes. |
 | `storage` | Save extension preferences. |
 | `tabs` | Identify the active tab and update results when its page changes. |
 | DeviantArt and WixMP host access | Scan supported DeviantArt pages and access related image hosts. |
 | Optional access to other sites | Scan a site only after you enable **Find images on any page** and grant Chrome access. |
 
-The extension processes the page details needed to find images, such as image URLs and dimensions, in your browser. Scan results are not sent to a developer-operated service. Preferences are stored locally. When you download an image or check its file size, Chrome may request it from the image's source host, which has its own privacy practices.
+The extension processes the page details needed to find images, such as image URLs and dimensions, in your browser. Scan results are not sent to a developer-operated service. Preferences are stored locally, as is the optional saved-image history, which is off by default. When you download an image or check its file size, Chrome may request it from the image's source host, which has its own privacy practices.
 
 Read the [privacy policy](apps/web/privacy.html) for details. Store publishers should review Google's current [Chrome Web Store Program Policies](https://developer.chrome.com/docs/webstore/program-policies/) and [permission guidance](https://developer.chrome.com/docs/webstore/program-policies/permissions/) before submission. Store disclosures must match the behavior of the submitted extension.
 
@@ -62,8 +66,10 @@ Common commands:
 | `pnpm check:biome` | Run Biome formatting and lint checks. |
 | `pnpm format` | Format supported files with Biome. |
 | `pnpm lint` | Run Biome lint rules. |
+| `pnpm test:unit` | Run unit tests for the ZIP writer and file naming. |
 | `pnpm test:smoke` | Run the save-folder support smoke check. |
 | `pnpm test:e2e` | Run browser end-to-end checks. |
+| `pnpm test:e2e:zip` | Run browser checks for ZIP downloads, filters, templates, and history. |
 | `pnpm test:e2e:profile` | Run profile-page checks. |
 | `pnpm test:visual` | Run visual checks. |
 | `pnpm test:sidebar` | Run side-panel checks. |
@@ -72,15 +78,16 @@ The repository recommends the Biome VS Code extension. Formatting and Biome fixe
 
 ## Package a release
 
-Run the packer from the repository root:
+Set the version everywhere it appears, then run the packer from the repository root:
 
 ```sh
+pnpm version:set 0.2.1-alpha.1
 pnpm pack:extension
 ```
 
-It creates versioned ZIP archives in `dist/extension/` and `apps/web/downloads/`. The packer reads the app version and checks that the extension package and manifest match it. `pnpm publish:extension` runs the same packaging step; it prepares the archive for manual submission and does not upload it to the Chrome Web Store.
+It creates versioned ZIP archives in `dist/extension/` and `apps/web/downloads/`. The packer reads the app version and checks that the extension package, manifest, and user-facing pages match it. `pnpm publish:extension` runs the same packaging step; it prepares the archive for manual submission and does not upload it to the Chrome Web Store.
 
-The Chrome manifest uses a numeric version, while `version_name` displays the alpha label. Increase the numeric manifest version for each future extension release. Store listing copy and graphics are in [`apps/extension/store/`](apps/extension/store/). Those materials still need final screenshots, publisher contact details, and review against the submitted build.
+The Chrome manifest uses a numeric version, while `version_name` displays the alpha label. Increase the numeric manifest version for each future extension release, because the Chrome Web Store only accepts a higher number. For example, the next store upload after `0.2.0-alpha.1` is `0.2.1-alpha.1`. Store listing copy and graphics are in [`apps/extension/store/`](apps/extension/store/). Those materials still need final screenshots, publisher contact details, and review against the submitted build.
 
 ## Contributing
 

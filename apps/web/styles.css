@@ -718,6 +718,18 @@ h1 {
 .workflow {
 	padding-block: 88px;
 }
+.whats-new > .section-shell {
+	padding-block: 44px;
+}
+
+.whats-new .eyebrow {
+	margin: 0 0 28px;
+}
+
+.whats-new .feature-grid {
+	padding: 0;
+}
+
 .section-heading {
 	display: flex;
 	align-items: flex-end;
