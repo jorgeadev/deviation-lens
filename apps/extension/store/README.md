@@ -12,7 +12,7 @@ Run these from the repository root.
 ### Before merging
 
 1. `pnpm version:set <version>`, and add that version to [the changelog](../../web/changelog.html) with its release month. Update the "What's new" heading in [index.html](../../web/index.html).
-   If the UI changed, run `pnpm shots` after setting the version. It creates `apps/web/assets/<version>/`, so past images stay untouched. Then point the image paths in `index.html` at the new folder. If the UI did not change, keep using the existing folder.
+   If the UI changed, run `pnpm shots` and `pnpm video` after setting the version. They create `apps/web/assets/<version>/`, so past images stay untouched. Then point the image and video paths in `index.html` and the root `README.md` at the new folder. If the UI did not change, keep using the existing folder.
 2. `pnpm check`, `pnpm test:unit`, `pnpm test:smoke`, and `pnpm pack:extension`.
 3. Extract `dist/extension/deviation-lens-<version>.zip` to a temporary folder, and run `pnpm test:e2e:zip` with `DEVIATION_LENS_EXT` set to that folder. This tests exactly what will be uploaded.
 4. Load the same folder with **Load unpacked** and try the steps Chrome will not let a test operate:
@@ -30,7 +30,7 @@ Run these from the repository root.
 ### Publish the extension
 
 7. In the Chrome Web Store Developer Dashboard, upload `dist/extension/deviation-lens-<version>.zip` as a new package for the existing item.
-8. Update the listing from [listing.md](listing.md), and replace the screenshots with the JPEG files in `apps/web/assets/<version>/store/`.
+8. Update the listing from [listing.md](listing.md), then upload the store images from `apps/web/assets/<version>/store/`: everything in `screenshots/` in numbered order, the small promo tile, and the marquee promo tile. `pnpm shots` also packs them into `dist/store/deviation-lens-<version>-store-images.zip`.
 9. On the **Privacy** tab, update the permission justifications and data disclosures from [listing.md](listing.md). Remove any justification for a permission the manifest no longer requests. Check them against the uploaded package and Google's current policies.
 10. Submit for review. After approval, tag the published commit: `git tag v<version>` and `git push origin v<version>`.
 

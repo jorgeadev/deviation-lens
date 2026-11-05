@@ -1,15 +1,17 @@
 # Chrome Web Store graphics
 
-- `store-icon-128.png`: 128 × 128 listing icon with transparent padding.
-- `promo-small.png`: 440 × 280 required small promotional tile.
-- `promo-marquee.png`: 1400 × 560 optional marquee tile.
-- `cover-1280x800.png`: branded Deviation Lens cover, 1280 × 800, 24-bit RGB PNG without alpha.
-- `promo-small-v2.png`: matching cover for the small promotional tile, 440 × 280, 24-bit RGB PNG without alpha.
-- `promo-marquee-v2.png`: matching wide cover for the marquee promotional tile, 1400 × 560, 24-bit RGB PNG without alpha.
-- `screenshots/01-image-results.png`, `02-variant-details.png`, and `03-download-options.png`: 1280 × 800 captures from the repository's earlier extension UI.
-- `screenshots/04-deviation-lens-generated.png`: 1280 × 800, 24-bit RGB PNG without alpha; an AI-generated screenshot illustration using the current name and settings, not a live capture.
-- `screenshots/feature-set/*.png`: four distinct AI-generated feature illustrations covering discovery, quality comparison, download choices, and scan settings; each is 1280 × 800, 24-bit RGB PNG without alpha. These illustrate supported features and are not live captures.
+The current store images are in [`apps/web/assets/0.2.0/store/`](../../../web/assets/0.2.0/store/). All are JPEG with no alpha channel, as the store requires.
 
-The current listing screenshots are in [`apps/web/assets/0.2.0/store/`](../../../web/assets/0.2.0/store/): 1280 × 800 JPEG with no alpha channel, as the store requires. `pnpm shots` builds them for the current version, along with the matching website images. The panels are captures of the real extension UI, filled with sample data and the project's own illustrations from `packages/tools/scripts/assets/sample-art/`, so no third-party artwork appears in them.
+| Dashboard field | File | Size |
+| --- | --- | --- |
+| Screenshots (up to 5) | `screenshots/1-download-your-picks.jpg` to `screenshots/5-choose-location.jpg` | 1280 x 800 |
+| Small promo tile | `promo-small-440x280.jpg` | 440 x 280 |
+| Marquee promo tile | `promo-marquee-1400x560.jpg` | 1400 x 560 |
 
-The original three screenshots are real captures, but they predate the Deviation Lens label and the Explore/any-page settings. Refresh them from the final release before uploading. Do not treat the generated illustration or illustrative web-page preview as a live extension capture.
+`pnpm shots` builds them for the current version, along with the matching website images, and packs them into `dist/store/deviation-lens-<version>-store-images.zip`. The panels are captures of the real extension UI, filled with sample data and the project's own illustrations from `packages/tools/scripts/assets/sample-art/`, so no third-party artwork appears in them.
+
+This folder keeps the listing icon and earlier artwork:
+
+- `store-icon-128.png`: 128 x 128 listing icon with transparent padding.
+- `promo-small.png`: earlier 440 x 280 small promo tile.
+- `promo-marquee.png`: earlier 1400 x 560 marquee promo tile.
