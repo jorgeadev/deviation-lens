@@ -17,10 +17,7 @@
 		"video": "node packages/tools/scripts/assets/make-promo-video.js",
 		"test:unit": "pnpm --filter @deviation-lens/tools run test",
 		"test:smoke": "pnpm --filter @deviation-lens/tools run smoke",
-		"test:e2e": "pnpm --filter @deviation-lens/tools run e2e",
-		"test:e2e:zip": "pnpm --filter @deviation-lens/tools run e2e:zip",
-		"test:e2e:profile": "pnpm --filter @deviation-lens/tools run e2e:profile",
-		"test:visual": "pnpm --filter @deviation-lens/tools run e2e:visual"
+		"test:e2e": "pnpm --filter @deviation-lens/tools run e2e"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.15"

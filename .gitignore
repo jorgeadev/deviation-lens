@@ -25,3 +25,6 @@ coverage/
 # Local-only task notes
 TODO.md
 .trash/
+
+# Private account and channel assets; never pushed
+private-assets/

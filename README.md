@@ -87,10 +87,7 @@ Common commands:
 | `pnpm shots` | Build the website images and store screenshots for the current version in `apps/web/assets/<version>/`. |
 | `pnpm video` | Render the promo video and its posters for the current version in `apps/web/assets/<version>/`. Requires `ffmpeg`. |
 | `pnpm test:smoke` | Run the save-folder support smoke check. |
-| `pnpm test:e2e` | Run browser end-to-end checks. |
-| `pnpm test:e2e:zip` | Run browser checks for ZIP downloads, filters, templates, and history. |
-| `pnpm test:e2e:profile` | Run profile-page checks. |
-| `pnpm test:visual` | Run visual checks. |
+| `pnpm test:e2e` | Run browser checks against live DeviantArt pages, including scanning, ZIP downloads, settings, and profile ranges. |
 
 The repository recommends the Biome VS Code extension. Formatting and Biome fixes run on save when that extension is installed. Browser test binaries and generated output are local files under `packages/tools/browsers/` and `packages/tools/out/`.
 
