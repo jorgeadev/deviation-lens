@@ -443,7 +443,7 @@ function renderList(keepScroll) {
 		const head = el("li", "asset-head");
 		if (asset.title) {
 			const t = asset.title.length > 64 ? `${asset.title.slice(0, 61)}…` : asset.title;
-			head.textContent = `${asset.date || ""} · ${t}`;
+			head.textContent = asset.date ? `${asset.date} · ${t}` : t;
 		} else {
 			head.textContent = `Asset ${idx + 1} · ${asset.caps ? `${fmtDims(asset.caps.w, asset.caps.h)} max` : asset.ext.toUpperCase()}`;
 		}

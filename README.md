@@ -70,6 +70,7 @@ Common commands:
 | `pnpm format` | Format supported files with Biome. |
 | `pnpm lint` | Run Biome lint rules. |
 | `pnpm test:unit` | Run unit tests for the ZIP writer, file naming, and the permissions list. |
+| `pnpm shots` | Build the website images and store screenshots for the current version in `apps/web/assets/<version>/`. |
 | `pnpm test:smoke` | Run the save-folder support smoke check. |
 | `pnpm test:e2e` | Run browser end-to-end checks. |
 | `pnpm test:e2e:zip` | Run browser checks for ZIP downloads, filters, templates, and history. |
