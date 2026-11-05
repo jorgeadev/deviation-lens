@@ -718,6 +718,19 @@ h1 {
 .workflow {
 	padding-block: 88px;
 }
+.video-section {
+	padding-block: 56px;
+	scroll-margin-top: 24px;
+}
+.promo-video {
+	display: block;
+	width: 100%;
+	height: auto;
+	margin-top: 32px;
+	border-radius: 14px;
+	background: #05090c;
+	box-shadow: 0 18px 50px rgba(26, 41, 36, 0.18);
+}
 .whats-new > .section-shell {
 	padding-block: 44px;
 }
