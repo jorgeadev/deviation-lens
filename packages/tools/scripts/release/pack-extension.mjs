@@ -2,6 +2,7 @@ import { deflateRawSync } from "node:zlib";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { CHANGELOG_PAGE, VERSION_RULES } from "./versioned-files.mjs";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(scriptDir, "../../../..");
@@ -9,21 +10,27 @@ const extensionDir = path.join(rootDir, "apps", "extension");
 const outputDirs = [path.join(rootDir, "dist", "extension"), path.join(rootDir, "apps", "web", "downloads")];
 
 const app = JSON.parse(await fs.readFile(path.join(rootDir, "package.json"), "utf8"));
-const extension = JSON.parse(await fs.readFile(path.join(extensionDir, "package.json"), "utf8"));
-const manifest = JSON.parse(await fs.readFile(path.join(extensionDir, "manifest.json"), "utf8"));
 const version = app.version;
 
-if (!version || extension.version !== version || manifest.version_name !== version) {
-	throw new Error(`Version mismatch: app=${version}, extension=${extension.version}, manifest=${manifest.version_name}`);
+if (!version) throw new Error("The root package.json has no version.");
+for (const { file, patterns } of VERSION_RULES) {
+	const text = await fs.readFile(path.join(rootDir, file), "utf8");
+	for (const pattern of patterns) {
+		const found = [...text.matchAll(pattern)].map((match) => match[2]);
+		if (!found.length || found.some((value) => value !== version)) {
+			throw new Error(`${file} does not state version ${version} (found ${found.join(", ") || "nothing"}). Run pnpm version:set.`);
+		}
+	}
 }
-if (manifest.version !== version.split("-")[0]) {
-	throw new Error(`Chrome manifest version ${manifest.version} does not match app version ${version.split("-")[0]}.`);
-}
+
+const changelog = await fs.readFile(path.join(rootDir, CHANGELOG_PAGE), "utf8");
+if (!changelog.includes(`id="v${version}"`)) throw new Error(`${CHANGELOG_PAGE} has no entry for ${version}. Add one with id="v${version}".`);
 
 const files = [];
 async function collectFiles(dir, relativeDir = "") {
 	for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
-		if (entry.name === "package.json" || entry.name === "store") continue;
+		// Not part of the extension: package metadata, store materials, and a page only test scripts open.
+		if (entry.name === "package.json" || entry.name === "store" || entry.name === "popup.html") continue;
 		const absolutePath = path.join(dir, entry.name);
 		const relativePath = path.posix.join(relativeDir, entry.name);
 		if (entry.isDirectory()) {

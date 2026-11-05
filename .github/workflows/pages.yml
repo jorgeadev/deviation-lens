@@ -7,7 +7,8 @@ on:
       - "apps/web/**"
       - "package.json"
       - "apps/extension/**"
-      - "packages/tools/scripts/release/pack-extension.mjs"
+      - "packages/tools/scripts/release/**"
+      - ".github/ISSUE_TEMPLATE/bug_report.yml"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 

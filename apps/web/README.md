@@ -1,6 +1,6 @@
 # Product and privacy site
 
-This directory contains the static Deviation Lens product page and privacy policy. GitHub Pages deploys it directly from the repository without a build step. The product page links to the published Chrome Web Store listing and includes illustrative product previews in `assets/product-shots/`.
+This directory contains the static Deviation Lens product page and privacy policy. GitHub Pages deploys it directly from the repository without a build step. The product page links to the published Chrome Web Store listing and includes product previews in `assets/<version>/`. Run `pnpm shots` to build them, and add a new version folder only when the UI changes. The `store/` folder inside each one holds the matching Chrome Web Store screenshots.
 
 - Entry page: [index.html](index.html)
 - Privacy policy: [privacy.html](privacy.html)
