@@ -1,4 +1,5 @@
 const $ = (s) => document.querySelector(s);
+const { naming, history: savedHistory } = globalThis.DeviationLens;
 
 function openIdb() {
 	return new Promise((resolve, reject) => {
@@ -140,7 +141,7 @@ document.querySelectorAll('input[name="mode"]').forEach((radio) => {
 			setStatus("Custom folder enabled.", "ok");
 		} else {
 			await chrome.storage.local.set({ saveMode: radio.value });
-			setStatus(radio.value === "ask" ? "A Save As dialog will open for every download." : "Using the browser default folder.", "ok");
+			setStatus(radio.value === "ask" ? "A Save As dialog will open for every file or ZIP." : "Using the browser default folder.", "ok");
 		}
 		refresh();
 	});
@@ -180,4 +181,79 @@ $("#btnSettings").addEventListener("click", () => {
 	chrome.tabs.create({ url });
 });
 
+const TEMPLATE_SAMPLE = { artist: "ArtistName", title: "Sunset Valley", date: "2026-01-15", id: "1234567890", width: 3840, height: 2160 };
+
+function showTemplatePreview(template) {
+	$("#templatePreview").textContent = template
+		? naming.renderTemplate(template, TEMPLATE_SAMPLE, "png")
+		: "ArtistName_2026-01-15_Sunset_Valley.png (automatic)";
+}
+
+function handleTemplateInput() {
+	const template = $("#inpTemplate").value.trim();
+	const unknown = naming.unknownTokens(template);
+	if (unknown.length) {
+		setStatus(`Unknown name token: {${unknown[0]}}. The template was not saved.`, "err");
+		return;
+	}
+	showTemplatePreview(template);
+	chrome.storage.local.set({ filenameTemplate: template });
+	setStatus(template ? "Name template saved." : "Using automatic names.", "ok");
+}
+
+async function refreshHistoryCount() {
+	let count = 0;
+	try {
+		count = await savedHistory.count();
+	} catch (_e) {}
+	$("#historyCount").textContent = `${count} ${count === 1 ? "artwork" : "artworks"} remembered`;
+	$("#btnClearHistory").disabled = count === 0;
+}
+
+$("#chkZip").addEventListener("change", () => {
+	chrome.storage.local.set({ zipDownloads: $("#chkZip").checked });
+	setStatus($("#chkZip").checked ? "Multiple images will be saved as one ZIP." : "Multiple images will be saved as separate files.", "ok");
+});
+
+$("#inpTemplate").addEventListener("input", handleTemplateInput);
+
+$("#btnTemplateReset").addEventListener("click", () => {
+	$("#inpTemplate").value = "";
+	handleTemplateInput();
+});
+
+$("#chkRemember").addEventListener("change", () => {
+	chrome.storage.local.set({ rememberSaved: $("#chkRemember").checked });
+	setStatus(
+		$("#chkRemember").checked ? "Saved images will be remembered and skipped." : "Saved images will no longer be recorded or skipped.",
+		"ok",
+	);
+});
+
+$("#btnClearHistory").addEventListener("click", async () => {
+	if (!window.confirm("Forget all remembered images? They can then be downloaded again by Download all and profile ranges.")) return;
+	try {
+		await savedHistory.clear();
+		chrome.runtime.sendMessage({ type: "DA_HISTORY_CHANGED" }).catch(() => {});
+		setStatus("History cleared.", "ok");
+	} catch (e) {
+		setStatus(`Could not clear the history: ${e?.message || e}`, "err");
+	}
+	refreshHistoryCount();
+});
+
+chrome.runtime.onMessage.addListener((message) => {
+	if (message?.type === "DA_HISTORY_CHANGED") refreshHistoryCount();
+});
+
+async function initDownloadOptions() {
+	const stored = await chrome.storage.local.get(["zipDownloads", "filenameTemplate", "rememberSaved"]);
+	$("#chkZip").checked = stored.zipDownloads !== false;
+	$("#inpTemplate").value = stored.filenameTemplate || "";
+	$("#chkRemember").checked = stored.rememberSaved === true;
+	showTemplatePreview(stored.filenameTemplate || "");
+	refreshHistoryCount();
+}
+
+initDownloadOptions();
 refresh();

@@ -1,3 +1,5 @@
+importScripts("lib/naming.js", "lib/folder.js", "lib/history.js");
+
 const batches = new Map();
 let batchSeq = 0;
 
@@ -5,103 +7,119 @@ chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => 
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-function sanitize(name) {
-	return String(name == null ? "" : name)
-		.replace(/[<>:"/\\|?*]|\p{Cc}/gu, "_")
-		.replace(/\s+/g, " ")
-		.replace(/^[. ]+|[. ]+$/g, "")
-		.trim();
-}
-
-function openIdb() {
-	return new Promise((resolve, reject) => {
-		const req = indexedDB.open("da-image-hunter", 1);
-		req.onupgradeneeded = () => {
-			if (!req.result.objectStoreNames.contains("handles")) req.result.createObjectStore("handles");
-		};
-		req.onsuccess = () => resolve(req.result);
-		req.onerror = () => reject(req.error);
-	});
-}
-
-function idbGet(db, store, key) {
-	return new Promise((resolve, reject) => {
-		const tx = db.transaction(store, "readonly");
-		const rq = tx.objectStore(store).get(key);
-		rq.onsuccess = () => resolve(rq.result);
-		rq.onerror = () => reject(rq.error);
-	});
-}
-
-async function getFolderHandle() {
+async function recordSaved(keys) {
+	const { history } = globalThis.DeviationLens;
+	if (!keys.some(Boolean)) return;
 	try {
-		const db = await openIdb();
-		try {
-			return await idbGet(db, "handles", "folder");
-		} finally {
-			db.close();
-		}
-	} catch (_e) {
-		return null;
-	}
-}
-
-async function createUniqueFile(dir, name) {
-	const dot = name.lastIndexOf(".");
-	const stem = dot > 0 ? name.slice(0, dot) : name;
-	const ext = dot > 0 ? name.slice(dot) : "";
-	for (let n = 1; n < 10000; n++) {
-		const candidate = n === 1 ? name : `${stem} (${n})${ext}`;
-		try {
-			await dir.getFileHandle(candidate);
-		} catch (e) {
-			if (e?.name === "NotFoundError") return { handle: await dir.getFileHandle(candidate, { create: true }), name: candidate };
-			if (e?.name !== "TypeMismatchError") throw e;
-		}
-	}
-	throw new Error(`Could not find a free file name for ${name}.`);
+		await history.add(keys);
+		chrome.runtime.sendMessage({ type: "DA_HISTORY_CHANGED" }).catch(() => {});
+	} catch (_e) {}
 }
 
 async function writeToCustomFolder(item) {
-	const handle = await getFolderHandle();
-	if (!handle) return { ok: false, error: "No custom folder selected yet. Open the extension folder settings." };
-	let perm = "granted";
-	try {
-		perm = await handle.queryPermission({ mode: "readwrite" });
-	} catch (_e) {}
-	if (perm !== "granted") return { ok: false, error: "Folder access expired. Open Folder settings and click Connect again." };
+	const { folder } = globalThis.DeviationLens;
+	const target = await folder.prepare();
+	if (!target.ok) return target;
 	const res = await fetch(item.url, { credentials: "include" });
 	if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
-	const blob = await res.blob();
-	const parts = String(item.filename || "image")
-		.split("/")
-		.map((p) => sanitize(p))
-		.filter(Boolean);
-	if (!parts.length) parts.push("image");
-	let dir = handle;
-	for (const p of parts.slice(0, -1)) {
-		dir = await dir.getDirectoryHandle(p, { create: true });
-	}
-	const name = parts[parts.length - 1] || "image";
-	const { handle: fh, name: savedName } = await createUniqueFile(dir, name);
-	const w = await fh.createWritable();
-	await w.write(blob);
-	await w.close();
-	return { ok: true, path: [...parts.slice(0, -1), savedName].join("/") };
+	const savedPath = await folder.writeBlob(target.handle, item.filename || "image", await res.blob());
+	await recordSaved([item.meta?.historyKey]);
+	return { ok: true, path: savedPath };
 }
 
-function downloadViaBrowser(item, ask) {
+// Downloads are tracked by URL in session storage: the worker may restart while one is in progress,
+// and the download's completion event can arrive before the download() callback does.
+const pendingKey = (url) => `pendingDownload:${url}`;
+
+async function trackDownload(url, info) {
+	await chrome.storage.session.set({ [pendingKey(url)]: info });
+}
+
+async function untrackDownload(url) {
+	await chrome.storage.session.remove(pendingKey(url));
+}
+
+async function downloadViaBrowser(item, ask) {
+	const { naming } = globalThis.DeviationLens;
+	const historyKey = item.meta?.historyKey;
+	if (historyKey) await trackDownload(item.url, { kind: "file", historyKey });
 	return new Promise((resolve) => {
-		const folder = item.folder ? sanitize(item.folder) : "";
-		const file = sanitize(item.filename).slice(0, 180) || "image";
-		const full = folder ? `${folder}/${file}` : file;
+		const full = naming.sanitizePath(`${item.folder || ""}/${item.filename || ""}`) || "image";
 		chrome.downloads.download({ url: item.url, filename: full, conflictAction: "uniquify", saveAs: !!ask }, (id) => {
 			if (chrome.runtime.lastError) {
+				if (historyKey) untrackDownload(item.url);
 				resolve({ ok: false, error: chrome.runtime.lastError.message });
 			} else {
 				resolve({ ok: true, id });
 			}
 		});
+	});
+}
+
+async function saveZip({ blobUrl, filename, ask }) {
+	await trackDownload(blobUrl, { kind: "zip" });
+	return new Promise((resolve) => {
+		chrome.downloads.download({ url: blobUrl, filename, conflictAction: "uniquify", saveAs: !!ask }, () => {
+			const error = chrome.runtime.lastError?.message;
+			if (!error) {
+				resolve({ ok: true });
+				return;
+			}
+			untrackDownload(blobUrl);
+			resolve({ ok: false, error, cancelled: /cancel/i.test(error) });
+		});
+	});
+}
+
+chrome.downloads.onChanged.addListener(async (delta) => {
+	const state = delta.state?.current;
+	if (state !== "complete" && state !== "interrupted") return;
+	const [download] = await chrome.downloads.search({ id: delta.id });
+	if (!download) return;
+	const key = pendingKey(download.url);
+	const stored = await chrome.storage.session.get(key);
+	const info = stored[key];
+	if (!info) return;
+	await untrackDownload(download.url);
+	const ok = state === "complete";
+	if (info.kind === "file") {
+		if (ok) await recordSaved([info.historyKey]);
+		return;
+	}
+	const reason = delta.error?.current || download.error || "";
+	chrome.runtime
+		.sendMessage({ type: "OS_SAVE_DONE", blobUrl: download.url, ok, error: reason, cancelled: reason === "USER_CANCELED" })
+		.catch(() => {});
+});
+
+let offscreenCreation = null;
+
+async function ensureOffscreen() {
+	if (await chrome.offscreen.hasDocument()) return;
+	if (!offscreenCreation) {
+		offscreenCreation = chrome.offscreen
+			.createDocument({
+				url: "offscreen.html",
+				reasons: ["BLOBS"],
+				justification: "Build a ZIP file from the images the user chose and hand it to the downloads API.",
+			})
+			.finally(() => {
+				offscreenCreation = null;
+			});
+	}
+	await offscreenCreation;
+}
+
+async function startZipJob({ items, zipName }) {
+	const { naming } = globalThis.DeviationLens;
+	const { saveMode } = await chrome.storage.local.get("saveMode");
+	await ensureOffscreen();
+	return chrome.runtime.sendMessage({
+		type: "OS_START",
+		items,
+		zipName: naming.sanitize(zipName) || "deviation-lens-images.zip",
+		folder: items[0]?.folder || "",
+		saveMode: saveMode || "default",
 	});
 }
 
@@ -213,6 +231,20 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 		batches.set(batchId, { id: batchId, total: msg.items.length, done: 0, failed: 0, current: null, finished: false, errors: [] });
 		runBatch(batchId, msg.items);
 		sendResponse({ batchId });
+		return false;
+	}
+	if (msg.type === "DA_DOWNLOAD_ZIP") {
+		startZipJob(msg)
+			.then(sendResponse)
+			.catch((e) => sendResponse({ ok: false, error: String(e?.message || e) }));
+		return true;
+	}
+	if (msg.type === "DA_SAVE_ZIP") {
+		saveZip(msg).then(sendResponse);
+		return true;
+	}
+	if (msg.type === "DA_OFFSCREEN_IDLE") {
+		chrome.offscreen.closeDocument().catch(() => {});
 		return false;
 	}
 	if (msg.type === "DA_BATCH_STATUS") {

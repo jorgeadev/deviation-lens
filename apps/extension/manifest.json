@@ -22,7 +22,7 @@
 	"background": {
 		"service_worker": "background.js"
 	},
-	"permissions": ["activeTab", "sidePanel", "scripting", "downloads", "storage", "tabs"],
+	"permissions": ["activeTab", "sidePanel", "scripting", "downloads", "offscreen", "storage", "tabs"],
 	"optional_host_permissions": ["*://*/*"],
 	"side_panel": {
 		"default_path": "sidepanel.html"

@@ -1,4 +1,5 @@
 const $ = (s) => document.querySelector(s);
+const { naming, history: savedHistory } = globalThis.DeviationLens;
 
 const state = {
 	tabId: null,
@@ -11,6 +12,10 @@ const state = {
 	probe: null,
 	batchId: null,
 	pollTimer: null,
+	jobId: null,
+	jobTimer: null,
+	prefs: { zipDownloads: true, filenameTemplate: "", rememberSaved: false, minSize: 0 },
+	savedKeys: new Set(),
 	busy: false,
 	renderLimit: 40,
 	range: { items: [], busy: false },
@@ -134,7 +139,7 @@ async function ensureContentScript(tab, permissionGranted) {
 	return !!(ping2?.ok);
 }
 
-function showNotice(text, kind) {
+function showNotice(text, kind, action) {
 	const n = $("#notice");
 	if (!text) {
 		n.classList.add("hidden");
@@ -143,6 +148,16 @@ function showNotice(text, kind) {
 	}
 	n.className = `notice${kind ? ` ${kind}` : ""}`;
 	n.textContent = text;
+	if (action) {
+		const button = el("button", "btn noticeAction");
+		button.type = "button";
+		button.textContent = action.label;
+		button.addEventListener("click", () => {
+			showNotice("");
+			action.run();
+		});
+		n.appendChild(button);
+	}
 }
 
 function setProgress(text) {
@@ -179,9 +194,24 @@ function allImages() {
 	return out;
 }
 
+function meetsMinSize(img) {
+	const { minSize } = state.prefs;
+	const longest = Math.max(img.w || 0, img.h || 0);
+	// Originals often have unknown dimensions, and should not be hidden for that.
+	return !minSize || !longest || longest >= minSize;
+}
+
+function assetKey(asset, img) {
+	return naming.withoutQuery(asset?.base || img?.url);
+}
+
+function isSaved(asset, img) {
+	return state.prefs.rememberSaved && state.savedKeys.has(assetKey(asset, img));
+}
+
 function visibleImages() {
 	const showSmall = $("#chkSmall").checked;
-	let list = allImages();
+	let list = allImages().filter(({ img }) => meetsMinSize(img));
 	if (!showSmall) {
 		list = list.filter(({ img }) => {
 			if (img.role === "crop") return false;
@@ -215,8 +245,14 @@ function updateActionLabels() {
 	const visible = visibleImages();
 	const checked = visible.filter(({ img }) => state.selected.has(img.url));
 	$("#btnSelected").textContent = `Download selected (${checked.length})`;
-	$("#btnSelected").disabled = state.busy || checked.length === 0;
-	$("#btnAll").disabled = state.busy || visible.length === 0;
+	const zipActive = !!state.jobId;
+	$("#btnSelected").disabled = state.busy || zipActive || checked.length === 0;
+	$("#btnAll").disabled = state.busy || zipActive || visible.length === 0;
+	$("#btnAll").title = state.prefs.zipDownloads ? "Save all visible images as one ZIP file" : "Save all visible images as separate files";
+	$("#btnSelected").title = state.prefs.zipDownloads
+		? "Save 2 or more selected images as one ZIP file"
+		: "Save the selected images as separate files";
+	updateRangeButton();
 	const hasBest = pickBest().length > 0;
 	$("#btnBest").disabled = state.busy || !hasBest;
 	const dl = state.data?.page?.downloadUrl;
@@ -308,6 +344,7 @@ function buildRow(img, asset) {
 	meta.appendChild(line1);
 
 	const line2 = el("div", "line2");
+	if (isSaved(asset, img)) line2.appendChild(chip("Saved", "saved"));
 	if (asset?.date) line2.appendChild(chip(asset.date, "tier"));
 	line2.appendChild(chip(img.roleLabel, img.role === "download" ? "role-download" : img.role === "max" ? "role-max" : ""));
 	if (img.role === "download") line2.appendChild(chip(img.ext.toUpperCase()));
@@ -345,9 +382,14 @@ function renderList(keepScroll) {
 	if (!d.assets.length || !visible.length) {
 		const empty = el("li", "empty");
 		const big = el("div", "big");
-		big.textContent = "No images found in the main view";
 		const small = el("div", "");
-		small.textContent = "Open a deviation page, a gallery, or scroll the page so the images load, then press Rescan.";
+		if (d.assets.length) {
+			big.textContent = "No images match your filters";
+			small.textContent = "Lower the minimum size or turn on Small variants to see more.";
+		} else {
+			big.textContent = "No images found in the main view";
+			small.textContent = "Open a deviation page, a gallery, or scroll the page so the images load, then press Rescan.";
+		}
 		empty.appendChild(big);
 		empty.appendChild(small);
 		list.appendChild(empty);
@@ -556,15 +598,27 @@ function tierFor(w) {
 
 function filenameFor(img, asset) {
 	const p = state.data.page;
-	const artist = (p.artist || "deviantart").replace(/\s+/g, "_");
 	const ext = (img.ext || "jpg") === "jpeg" ? "jpg" : img.ext || "jpg";
+	if (state.prefs.filenameTemplate) {
+		const values = {
+			artist: p.artist,
+			title: asset?.title || p.title,
+			date: asset?.date,
+			id: asset?.id || p.deviationId,
+			width: img.w,
+			height: img.h,
+		};
+		return { filename: naming.renderTemplate(state.prefs.filenameTemplate, values, ext), folder: "DeviantArt" };
+	}
+	const artist = (p.artist || "deviantart").replace(/\s+/g, "_");
 	if (asset?.date) {
+		const fallback = asset.id ? `deviation-${asset.id}` : "deviation";
 		const t =
-			String(asset.title || `deviation-${asset.id || ""}`)
+			String(asset.title || fallback)
 				.replace(/[^\w\- ]+/g, "")
 				.trim()
 				.replace(/\s+/g, "_")
-				.slice(0, 90) || "deviation";
+				.slice(0, 90) || fallback;
 		return { filename: `${artist}_${asset.date}_${t}.${ext}`, folder: "DeviantArt" };
 	}
 	const title = (p.title || "artwork").replace(/\s+/g, "_");
@@ -573,17 +627,59 @@ function filenameFor(img, asset) {
 	return { filename: `${artist}_-_${title}${roleTag}${dims}.${ext}`, folder: "DeviantArt" };
 }
 
-async function downloadEntries(entries, label) {
-	if (!entries.length) return;
-	const items = entries.map(({ img, asset }) => {
-		const f = filenameFor(img, asset);
-		return { url: img.url, filename: f.filename, folder: f.folder };
-	});
-	startBatch(items, label);
+function itemFor({ img, asset }) {
+	const p = state.data.page;
+	const f = filenameFor(img, asset);
+	// Only full-quality saves count as having saved the artwork. A thumbnail should not hide the original later.
+	const fullQuality = img.role === "download" || img.role === "max";
+	return {
+		url: img.url,
+		filename: f.filename,
+		folder: f.folder,
+		meta: {
+			artist: p.artist || "",
+			title: asset?.title || p.title || "",
+			date: asset?.date || "",
+			pageUrl: asset?.deviationUrl || p.url || "",
+			width: img.w || 0,
+			height: img.h || 0,
+			historyKey: state.prefs.rememberSaved && fullQuality ? assetKey(asset, img) : "",
+		},
+	};
 }
 
-async function startBatch(items, label) {
+function zipNameFor(count) {
+	const { page, rangeMode } = state.data;
+	const artist = (page.artist || "").replace(/\s+/g, "_");
+	if (rangeMode) return `${[artist, rangeMode.from, rangeMode.to].filter(Boolean).join("_")}.zip`;
+	const title = (page.title || "images").replace(/\s+/g, "_").slice(0, 80);
+	const today = new Date().toLocaleDateString("en-CA");
+	return `${[artist, title, `${count}-images`, today].filter(Boolean).join("_")}.zip`;
+}
+
+async function downloadEntries(entries, label) {
+	if (!entries.length) return;
+	startBatch(entries.map(itemFor), label);
+}
+
+// Bulk actions leave out artwork that is already saved. Picking an image directly always downloads it.
+function downloadNew(entries, label) {
+	const fresh = entries.filter(({ img, asset }) => !isSaved(asset, img));
+	const skipped = entries.length - fresh.length;
+	if (entries.length && !fresh.length) {
+		showNotice(`All ${entries.length} image(s) are already saved. Select an image to download it again.`);
+		return;
+	}
+	if (skipped) showNotice(`${skipped} already saved, skipped.`);
+	downloadEntries(fresh, label);
+}
+
+async function startBatch(items, label, options) {
 	if (!items.length) return;
+	if (!options?.separateFiles && state.prefs.zipDownloads && items.length > 1) {
+		startZip(items);
+		return;
+	}
 	const res = await sendBg({ type: "DA_DOWNLOAD_BATCH", items });
 	if (!res?.batchId) {
 		showNotice("Could not start the download.", "err");
@@ -592,6 +688,84 @@ async function startBatch(items, label) {
 	state.batchId = res.batchId;
 	setProgress(`${label}: 0/${items.length}`);
 	pollBatch();
+}
+
+async function startZip(items) {
+	if (state.jobId) {
+		showNotice("A ZIP download is already running.", "warn");
+		return;
+	}
+	const res = await sendBg({ type: "DA_DOWNLOAD_ZIP", items, zipName: zipNameFor(items.length) });
+	if (!res?.ok) {
+		showNotice(res?.error || "Could not start the ZIP download.", "err");
+		return;
+	}
+	setProgress(`Preparing ZIP: 0/${items.length}`);
+	attachJob(res.jobId);
+}
+
+function attachJob(jobId) {
+	state.jobId = jobId;
+	$("#btnCancelJob").classList.remove("hidden");
+	updateActionLabels();
+	pollJob();
+}
+
+function detachJob() {
+	clearTimeout(state.jobTimer);
+	state.jobId = null;
+	$("#btnCancelJob").classList.add("hidden");
+	updateActionLabels();
+}
+
+function jobProgressText(st) {
+	if (st.phase === "saving") return st.saveMode === "ask" ? "ZIP ready. Choose where to save it…" : "Saving ZIP…";
+	const failed = st.failed ? ` · ${st.failed} failed` : "";
+	const current = st.current ? ` · ${st.current}` : "";
+	return `Preparing ZIP: ${st.done + st.failed}/${st.total}${failed}${current}`;
+}
+
+async function pollJob() {
+	clearTimeout(state.jobTimer);
+	const jobId = state.jobId;
+	if (!jobId) return;
+	const st = await sendBg({ type: "OS_STATUS", jobId });
+	if (state.jobId !== jobId) return;
+	if (!st) {
+		setProgress("");
+		detachJob();
+		return;
+	}
+	if (st.finished) {
+		finishJob(st);
+		return;
+	}
+	setProgress(jobProgressText(st));
+	state.jobTimer = setTimeout(pollJob, 500);
+}
+
+function finishJob(st) {
+	detachJob();
+	if (st.cancelled) {
+		setProgress("ZIP download cancelled.");
+		return;
+	}
+	const retry = st.failedItems.length
+		? { label: "Save failed as separate files", run: () => startBatch(st.failedItems, "Failed images", { separateFiles: true }) }
+		: null;
+	if (st.error) {
+		setProgress("");
+		showNotice(`ZIP download failed: ${st.error}`, "err", retry);
+		return;
+	}
+	const where = st.savedNames.length > 1 ? `${st.savedNames.length} ZIP files` : st.savedNames[0];
+	setProgress(`Saved ${st.done} image(s) to ${where}`);
+	if (st.failed) showNotice(`${st.failed} image(s) could not be added to the ZIP: ${st.firstError}`, "warn", retry);
+}
+
+async function resumeActiveJob() {
+	const active = await sendBg({ type: "OS_ACTIVE" });
+	if (active?.jobId && !state.jobId) attachJob(active.jobId);
 }
 
 async function pollBatch() {
@@ -761,7 +935,7 @@ async function refreshFolderLabel() {
 		saveMode === "custom"
 			? `Custom folder: ${folderName}. Click to change.`
 			: saveMode === "ask"
-				? "A Save As dialog opens for every download. Click to change."
+				? "A Save As dialog opens for every file or ZIP. Click to change."
 				: "Downloads\\DeviantArt (browser default). Click to choose a folder.";
 }
 
@@ -773,8 +947,36 @@ function initFolderButton() {
 	$("#btnFolder").addEventListener("click", () => {
 		chrome.tabs.create({ url: chrome.runtime.getURL("saver.html") });
 	});
-	chrome.storage.onChanged.addListener(() => refreshFolderLabel());
+	chrome.storage.onChanged.addListener((changes, area) => {
+		if (area !== "local") return;
+		refreshFolderLabel();
+		if (["zipDownloads", "filenameTemplate", "rememberSaved"].some((key) => key in changes)) applyPrefs();
+	});
 	refreshFolderLabel();
+}
+
+async function refreshSavedKeys() {
+	try {
+		state.savedKeys = state.prefs.rememberSaved ? await savedHistory.all() : new Set();
+	} catch (_e) {
+		state.savedKeys = new Set();
+	}
+	if (state.data?.assets) {
+		renderList(true);
+		updateActionLabels();
+	}
+}
+
+async function applyPrefs() {
+	try {
+		const stored = await chrome.storage.local.get(["zipDownloads", "filenameTemplate", "rememberSaved", "minSize"]);
+		state.prefs.zipDownloads = stored.zipDownloads !== false;
+		state.prefs.filenameTemplate = stored.filenameTemplate || "";
+		state.prefs.rememberSaved = stored.rememberSaved === true;
+		state.prefs.minSize = Number(stored.minSize) || 0;
+	} catch (_e) {}
+	$("#selMinSize").value = String(state.prefs.minSize);
+	await refreshSavedKeys();
 }
 
 async function initBestOnly() {
@@ -846,15 +1048,13 @@ async function scanRange() {
 	if (res.timedOut) extra = " (time limit reached, try a narrower range)";
 	else if (res.hasMore) extra = " (page cap reached, narrow the range for completeness)";
 	setRangeStatus(`${res.items.length} image(s) between ${from} and ${to} · ${res.pages} page(s) scanned${extra}`, res.items.length ? "" : "warn");
-	$("#btnRangeDownload").disabled = !res.items.length;
-	$("#btnRangeDownload").textContent = `Download (${res.items.length})`;
 	$("#btnRangeCopy").disabled = !res.items.length;
 	if (res.items.length) showRangeResults(res, from, to);
+	updateRangeButton();
 }
 
-function showRangeResults(res, from, to) {
-	const page = state.data.page;
-	const assets = res.items.map((it) => ({
+function rangeAsset(it) {
+	return {
 		base: it.bestUrl.split("/v1/")[0],
 		shortId: "",
 		id: it.id,
@@ -883,7 +1083,23 @@ function showRangeResults(res, from, to) {
 			},
 		],
 		score: (it.w || 0) * (it.h || 0),
-	}));
+	};
+}
+
+function rangeEntries() {
+	return (state.range?.items || []).map(rangeAsset).map((asset) => ({ img: asset.images[0], asset }));
+}
+
+function updateRangeButton() {
+	if (!state.range?.items?.length) return;
+	const entries = rangeEntries().filter(({ img, asset }) => meetsMinSize(img) && !isSaved(asset, img));
+	$("#btnRangeDownload").disabled = !entries.length || !!state.jobId;
+	$("#btnRangeDownload").textContent = `Download (${entries.length})`;
+}
+
+function showRangeResults(res, from, to) {
+	const page = state.data.page;
+	const assets = res.items.map(rangeAsset);
 	state.data = {
 		ok: true,
 		page: Object.assign({}, page, { title: `Gallery ${from} \u2192 ${to}` }),
@@ -901,17 +1117,6 @@ function showRangeResults(res, from, to) {
 	renderList();
 	updateActionLabels();
 	loadSizes();
-}
-
-function rangeFilename(it) {
-	const artist = (state.data.page.artist || "deviantart").replace(/\s+/g, "_");
-	const title =
-		String(it.title || `deviation-${it.id}`)
-			.replace(/[^\w\- ]+/g, "")
-			.trim()
-			.replace(/\s+/g, "_")
-			.slice(0, 90) || `deviation-${it.id}`;
-	return `${artist}_${it.date}_${title}.${it.ext}`;
 }
 
 function bindUi() {
@@ -944,10 +1149,8 @@ function bindUi() {
 	});
 	$("#btnRangeScan").addEventListener("click", () => scanRange());
 	$("#btnRangeDownload").addEventListener("click", () => {
-		const items = state.range?.items ? state.range.items : [];
-		if (!items.length) return;
-		const batch = items.map((it) => ({ url: it.bestUrl, filename: rangeFilename(it), folder: "DeviantArt" }));
-		startBatch(batch, `Profile range (${batch.length})`);
+		const entries = rangeEntries().filter(({ img }) => meetsMinSize(img));
+		downloadNew(entries, `Profile range (${entries.length})`);
 	});
 	$("#btnRangeCopy").addEventListener("click", async () => {
 		const items = state.range?.items ? state.range.items : [];
@@ -960,7 +1163,16 @@ function bindUi() {
 		const entries = visibleImages().filter(({ img }) => state.selected.has(img.url));
 		downloadEntries(entries, "Download selected");
 	});
-	$("#btnAll").addEventListener("click", () => downloadEntries(visibleImages(), "Download all"));
+	$("#btnAll").addEventListener("click", () => downloadNew(visibleImages(), "Download all"));
+	$("#btnCancelJob").addEventListener("click", () => {
+		if (state.jobId) sendBg({ type: "OS_CANCEL", jobId: state.jobId });
+	});
+	$("#selMinSize").addEventListener("change", () => {
+		state.prefs.minSize = Number($("#selMinSize").value) || 0;
+		chrome.storage.local.set({ minSize: state.prefs.minSize });
+		if (state.data?.assets) renderList();
+		updateActionLabels();
+	});
 	$("#btnCopy").addEventListener("click", async () => {
 		const urls = visibleImages().map(({ img }) => img.url);
 		if (!urls.length) return;
@@ -993,6 +1205,7 @@ function bindUi() {
 }
 
 chrome.runtime.onMessage.addListener((msg, sender) => {
+	if (msg && msg.type === "DA_HISTORY_CHANGED") refreshSavedKeys();
 	if (msg && msg.type === "DA_PROFILE_PROGRESS") {
 		setRangeStatus(`Scanning page ${msg.page}… ${msg.found} match(es) so far`);
 	}
@@ -1036,6 +1249,8 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
 	await initBestOnly();
 	await initExploreImages();
 	await initAnyPage();
+	await applyPrefs();
+	resumeActiveJob();
 	const tab = await getTargetTab();
 	if (!tab) {
 		$("#pageMeta").textContent = "No active page found";

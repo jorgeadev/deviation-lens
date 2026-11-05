@@ -8,6 +8,7 @@
 		"test": "node --test test/",
 		"smoke": "node scripts/checks/check-fs.js",
 		"e2e": "node scripts/e2e/e2e.js",
+		"e2e:zip": "node scripts/e2e/e2e-zip.js",
 		"e2e:profile": "node scripts/e2e/e2e-profile.js",
 		"e2e:visual": "node scripts/e2e/visual-popup.js",
 		"e2e:sidebar": "node scripts/e2e/e2e-sidebar.js",

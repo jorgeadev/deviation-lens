@@ -30,6 +30,16 @@
       <label class="chk" title="Show scaled/cropped thumbnails found in the main view">
         <input type="checkbox" id="chkSmall" checked> Small variants
       </label>
+      <label class="chk minSize" title="Hide images smaller than this on their longest side. Images with unknown dimensions stay visible.">
+        Min size
+        <select id="selMinSize">
+          <option value="0">Any</option>
+          <option value="1280">HD+</option>
+          <option value="1920">FHD+</option>
+          <option value="2560">QHD+</option>
+          <option value="3840">4K+</option>
+        </select>
+      </label>
     </div>
 
     <div class="scanSettings">
@@ -80,9 +90,14 @@
         <button type="button" id="btnAll" class="btn">Download all</button>
         <button type="button" id="btnCopy" class="btn ghost">Copy URLs</button>
       </div>
-      <div id="progress" class="progress hidden"></div>
+      <div class="jobRow">
+        <div id="progress" class="progress hidden"></div>
+        <button type="button" id="btnCancelJob" class="btn ghost hidden">Cancel</button>
+      </div>
     </footer>
   </div>
+  <script src="lib/naming.js"></script>
+  <script src="lib/history.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

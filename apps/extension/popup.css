@@ -608,6 +608,11 @@ body {
 	border-color: rgba(240, 180, 41, 0.5);
 }
 
+.chip.saved {
+	color: var(--green);
+	border-color: rgba(5, 204, 71, 0.5);
+}
+
 .rowActions {
 	display: flex;
 	flex-direction: column;
@@ -667,10 +672,38 @@ body {
 	text-align: center;
 }
 
+.jobRow {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.jobRow .btn {
+	flex: none;
+	margin-top: 6px;
+}
+
 .progress {
+	flex: 1;
+	min-width: 0;
 	margin-top: 6px;
 	font-size: 11.5px;
 	color: var(--muted);
+	overflow-wrap: anywhere;
+}
+
+.minSize select {
+	color: var(--text);
+	background: var(--panel);
+	border: 1px solid var(--line);
+	border-radius: 6px;
+	font: inherit;
+	padding: 1px 2px;
+}
+
+.noticeAction {
+	display: block;
+	margin-top: 6px;
 }
 
 .empty {

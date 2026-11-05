@@ -122,3 +122,50 @@ html:has(.saverPage) {
 .saverStatus.err {
 	color: var(--amber);
 }
+
+.settingHeading {
+	margin: 20px 0 8px;
+	padding-top: 14px;
+	border-top: 1px solid var(--line);
+	font-size: 13px;
+}
+
+.templateLabel {
+	display: block;
+	color: var(--muted);
+	font-size: 12px;
+}
+
+.templateRow {
+	margin-top: 4px;
+}
+
+.templateInput {
+	flex: 1 1 240px;
+	min-width: 0;
+	padding: 6px 8px;
+	color: var(--text);
+	background: var(--panel);
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	font: inherit;
+	font-size: 13px;
+}
+
+.templateHelp {
+	margin: 8px 0 0;
+	color: var(--muted);
+	font-size: 12px;
+	overflow-wrap: anywhere;
+}
+
+.templateHelp b {
+	color: var(--text);
+	font-weight: 600;
+}
+
+.historyCount {
+	align-self: center;
+	color: var(--muted);
+	font-size: 12px;
+}
