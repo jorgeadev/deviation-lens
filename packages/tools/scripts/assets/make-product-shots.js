@@ -1,6 +1,7 @@
 // Builds the website images and Chrome Web Store screenshots for the current version.
 //   apps/web/assets/<version>/*.png        1600 x 1000, used by the website
-//   apps/web/assets/<version>/store/*.jpg  1280 x 800, uploaded to the store
+//   apps/web/assets/<version>/store/       screenshots (1280 x 800) and promo tiles (440 x 280, 1400 x 560), JPEG with no alpha
+//   dist/store/deviation-lens-<version>-store-images.zip   the store/ folder, ready to unpack and upload
 // The panels are captures of the real extension UI. Their contents are sample data, and the artwork is the
 // project's own illustrations in sample-art/, so no third-party artwork appears. Run this when the UI changes.
 const fs = require("node:fs");
@@ -60,19 +61,19 @@ function asset(id, thumbUrl, images, details = {}) {
 }
 
 // Opens the real panel and fills it with sample results, then returns a capture of it.
-async function capturePanel(browser, extId, { width, height, page, assets, selected, sizes, progress }) {
+async function capturePanel(browser, extId, { width, height, page, assets, selected, sizes, progress, finished, locationChoice }) {
 	const tab = await browser.newPage();
 	await tab.setViewport({ width, height, deviceScaleFactor: 2 });
 	await tab.goto(`chrome-extension://${extId}/sidepanel.html`, { waitUntil: "domcontentloaded" });
 	await sleep(1500);
 	await tab.evaluate(
-		(pageInfo, assetList, selectedUrls, sizeTexts, progressText) => {
+		(pageInfo, assetList, selectedUrls, sizeTexts, progressText, showChoice, jobFinished) => {
 			state.data = { ok: true, page: pageInfo, assets: assetList, totalAssets: assetList.length, truncated: false };
 			const urls = assetList.flatMap((a) => a.images.map((img) => img.url));
 			state.selected = new Set(urls.filter((_url, index) => selectedUrls.includes(index)));
 			showNotice("");
 			setProgress(progressText || "");
-			document.querySelector("#btnCancelJob").classList.toggle("hidden", !progressText);
+			document.querySelector("#btnCancelJob").classList.toggle("hidden", !progressText || jobFinished);
 			document.querySelector("#pageMeta").textContent = `${pageInfo.title} | ${pageInfo.artist}`;
 			renderSummary();
 			renderList();
@@ -80,6 +81,7 @@ async function capturePanel(browser, extId, { width, height, page, assets, selec
 			document.querySelectorAll("[data-size-for]").forEach((cell, index) => {
 				cell.textContent = sizeTexts[index];
 			});
+			if (showChoice) document.querySelector("#saveChoice").showModal();
 			document.activeElement?.blur();
 		},
 		page,
@@ -87,6 +89,8 @@ async function capturePanel(browser, extId, { width, height, page, assets, selec
 		selected,
 		sizes,
 		progress,
+		locationChoice,
+		finished,
 	);
 	await sleep(400);
 	const shot = await tab.screenshot({ type: "png", encoding: "base64" });
@@ -182,11 +186,64 @@ const LAYOUTS = {
 		<h2 style="left:70px;top:478px;font-size:44px">Choose what to include<br>and where to scan.</h2>
 		<p style="position:absolute;left:70px;top:610px;font-size:28px;line-height:1.35;color:#cfd8df">All your preferences,<br>on one settings page.</p>
 		<img class="shot" src="${panel}" style="left:850px;top:352px;width:710px;height:575px">`,
+	"choose-location": (panel) => `
+		<img class="bg" src="${art("mountains.jpg")}" style="left:0;top:470px;width:900px;height:530px;-webkit-mask-image:linear-gradient(90deg,#000 72%,transparent),linear-gradient(0deg,#000 80%,transparent);-webkit-mask-composite:source-in">
+		<div class="glow" style="right:-180px;top:-260px;width:820px;height:820px;border-color:rgba(0,230,118,.35)"></div>
+		${brand(80, 60, 92)}
+		<h1 style="left:62px;top:180px;font-size:100px">You choose<br>where files go.</h1>
+		<h2 style="left:66px;top:392px;font-size:40px">Pick a folder, or get a Save As<br>dialog for every download.</h2>
+		<img class="shot" src="${panel}" style="left:826px;top:96px;width:726px;height:805px">`,
 };
 
-(async () => {
+// Promo tiles carry little text, because they are often shown small. Their art is the project's own, with no UI.
+const PROMOS = {
+	"promo-small-440x280": {
+		width: 440,
+		height: 280,
+		body: () => `
+			<img class="bg" src="${art("mountains.jpg")}" style="right:0;top:0;width:290px;height:280px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 75%)">
+			<div class="brand" style="left:22px;top:26px;gap:10px;font-size:21px"><img src="${ICON}" width="38" height="38" alt="">Deviation Lens</div>
+			<h1 style="left:22px;top:92px;font-size:41px">See the image.<br>Choose the file.</h1>
+			<h2 style="left:23px;top:208px;font-size:22px">Compare. Choose. Save.</h2>`,
+	},
+	"promo-marquee-1400x560": {
+		width: 1400,
+		height: 560,
+		body: () => `
+			<div class="glow" style="left:760px;top:-210px;width:900px;height:900px;border-color:rgba(0,230,118,.4)"></div>
+			<img class="bg" src="${art("sunset.jpg")}" style="left:770px;top:210px;width:300px;height:290px;border-radius:22px;border:3px solid #39e58c;transform:rotate(-7deg)">
+			<img class="bg" src="${art("forest-card.jpg")}" style="left:1120px;top:40px;width:250px;height:270px;border-radius:22px;border:3px solid #39e58c;transform:rotate(9deg)">
+			<img class="bg" src="${art("mountains.jpg")}" style="left:880px;top:50px;width:400px;height:420px;border-radius:22px;border:3px solid #39e58c;box-shadow:0 20px 60px rgba(0,0,0,.65);transform:rotate(3deg)">
+			${brand(70, 58, 78)}
+			<h1 style="left:66px;top:168px;font-size:88px">See the image.<br>Choose the file.</h1>
+			<h2 style="left:70px;top:372px;font-size:36px">Compare every available version,<br>then save one file or a whole ZIP.</h2>`,
+	},
+};
+
+const SCREENSHOT_ORDER = ["download-your-picks", "compare-best-quality", "find-image-variants", "scan-preferences", "choose-location"];
+const STORE_ONLY = new Set(["choose-location"]);
+
+// Packs the store folder with the extension's own ZIP writer.
+async function packStoreImages(storeDir) {
+	require(path.join(EXT, "lib", "zip.js"));
+	const { crc32, buildZip } = globalThis.DeviationLens.zip;
+	const files = fs.readdirSync(storeDir, { recursive: true, withFileTypes: true }).filter((entry) => entry.isFile());
+	const entries = files.map((entry) => {
+		const fullPath = path.join(entry.parentPath, entry.name);
+		const bytes = fs.readFileSync(fullPath);
+		return { name: path.relative(storeDir, fullPath).replaceAll("\\", "/"), data: new Blob([bytes]), size: bytes.length, crc: crc32(bytes) };
+	});
+	const target = path.join(ROOT, "dist", "store", `deviation-lens-${version}-store-images.zip`);
+	fs.mkdirSync(path.dirname(target), { recursive: true });
+	fs.writeFileSync(target, Buffer.from(await buildZip(entries).arrayBuffer()));
+	return { target, count: entries.length };
+}
+
+async function main() {
 	fs.rmSync(PROFILE, { recursive: true, force: true });
-	fs.mkdirSync(path.join(OUT, "store"), { recursive: true });
+	const STORE = path.join(OUT, "store");
+	fs.rmSync(STORE, { recursive: true, force: true });
+	fs.mkdirSync(path.join(STORE, "screenshots"), { recursive: true });
 	const browser = await puppeteer.launch({
 		executablePath: findChrome(),
 		headless: true,
@@ -246,24 +303,56 @@ const LAYOUTS = {
 				selected: [0, 1, 2],
 				sizes: ["21.2 MB", "6.9 MB", "2.6 MB"],
 			}),
+			"choose-location": await capturePanel(browser, extId, {
+				width: 550,
+				height: 610,
+				page: single("Sunset Coast"),
+				assets: [asset("1003", art("sunset.jpg"), sizes)],
+				selected: [0],
+				sizes: ["16.7 MB", "5.8 MB", "2.1 MB"],
+				locationChoice: true,
+			}),
+			// Last, because it changes saved settings that the panel captures above would pick up.
 			"scan-preferences": await captureSettings(browser, extId, 580, 470),
 		};
 
 		const canvas = await browser.newPage();
-		for (const [name, panel] of Object.entries(panels)) {
+		for (const name of SCREENSHOT_ORDER) {
+			const panel = panels[name];
 			const html = `<!doctype html><html><head><meta charset="utf-8"><style>${BASE_CSS}</style></head><body>${LAYOUTS[name](panel)}</body></html>`;
-			await canvas.setViewport({ width: 1600, height: 1000, deviceScaleFactor: 1 });
-			await canvas.setContent(html, { waitUntil: "load" });
-			await canvas.screenshot({ path: path.join(OUT, `${name}.png`) });
+			if (!STORE_ONLY.has(name)) {
+				await canvas.setViewport({ width: 1600, height: 1000, deviceScaleFactor: 1 });
+				await canvas.setContent(html, { waitUntil: "load" });
+				await canvas.screenshot({ path: path.join(OUT, `${name}.png`) });
+			}
 			await canvas.setViewport({ width: 1600, height: 1000, deviceScaleFactor: 0.8 });
 			await canvas.setContent(html, { waitUntil: "load" });
-			await canvas.screenshot({ path: path.join(OUT, "store", `${name}.jpg`), type: "jpeg", quality: 92 });
+			const position = SCREENSHOT_ORDER.indexOf(name) + 1;
+			await canvas.screenshot({ path: path.join(STORE, "screenshots", `${position}-${name}.jpg`), type: "jpeg", quality: 92 });
 		}
+		for (const [name, { width, height, body }] of Object.entries(PROMOS)) {
+			const size = `html, body { width: ${width}px; height: ${height}px; }`;
+			await canvas.setViewport({ width, height, deviceScaleFactor: 1 });
+			await canvas.setContent(
+				`<!doctype html><html><head><meta charset="utf-8"><style>${BASE_CSS}${size}</style></head><body>${body()}</body></html>`,
+				{ waitUntil: "load" },
+			);
+			await canvas.screenshot({ path: path.join(STORE, `${name}.jpg`), type: "jpeg", quality: 95 });
+		}
+		const { target, count } = await packStoreImages(STORE);
 		console.log(`Wrote images to ${OUT}`);
+		console.log(`Packed ${count} store images into ${target}`);
 	} finally {
 		await browser.close();
 	}
-})().catch((e) => {
-	console.error(e);
-	process.exit(1);
-});
+}
+
+// The promo video reuses the capture helpers. Building the images only happens when this file is run directly.
+module.exports = { art, asset, capturePanel, captureSettings, findChrome, ICON };
+
+if (require.main === module) {
+	main().catch((e) => {
+		console.error(e);
+		process.exit(1);
+	});
+}
