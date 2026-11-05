@@ -14,7 +14,7 @@ Run these from the repository root.
 1. `pnpm version:set <version>`, and add that version to [the changelog](../../web/changelog.html) with its release month. Update the "What's new" heading in [index.html](../../web/index.html).
    If the UI changed, run `pnpm shots` and `pnpm video` after setting the version. They create `apps/web/assets/<version>/`, so past images stay untouched. Then point the image and video paths in `index.html` and the root `README.md` at the new folder. If the UI did not change, keep using the existing folder.
 2. `pnpm check`, `pnpm test:unit`, `pnpm test:smoke`, and `pnpm pack:extension`.
-3. Extract `dist/extension/deviation-lens-<version>.zip` to a temporary folder, and run `pnpm test:e2e:zip` with `DEVIATION_LENS_EXT` set to that folder. This tests exactly what will be uploaded.
+3. Extract `dist/extension/deviation-lens-<version>.zip` to a temporary folder, and run `pnpm test:e2e` with `DEVIATION_LENS_EXT` set to that folder. This tests exactly what will be uploaded.
 4. Load the same folder with **Load unpacked** and try the steps Chrome will not let a test operate:
    - Choose a real folder from the first-download dialog, in the real side panel.
    - Restart Chrome with a custom folder set, then download. An access prompt should appear rather than an error.
