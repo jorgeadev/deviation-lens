@@ -46,6 +46,22 @@ async function getFolderHandle() {
 	}
 }
 
+async function createUniqueFile(dir, name) {
+	const dot = name.lastIndexOf(".");
+	const stem = dot > 0 ? name.slice(0, dot) : name;
+	const ext = dot > 0 ? name.slice(dot) : "";
+	for (let n = 1; n < 10000; n++) {
+		const candidate = n === 1 ? name : `${stem} (${n})${ext}`;
+		try {
+			await dir.getFileHandle(candidate);
+		} catch (e) {
+			if (e?.name === "NotFoundError") return { handle: await dir.getFileHandle(candidate, { create: true }), name: candidate };
+			if (e?.name !== "TypeMismatchError") throw e;
+		}
+	}
+	throw new Error(`Could not find a free file name for ${name}.`);
+}
+
 async function writeToCustomFolder(item) {
 	const handle = await getFolderHandle();
 	if (!handle) return { ok: false, error: "No custom folder selected yet. Open the extension folder settings." };
@@ -67,16 +83,11 @@ async function writeToCustomFolder(item) {
 		dir = await dir.getDirectoryHandle(p, { create: true });
 	}
 	const name = parts[parts.length - 1] || "image";
-	let fh;
-	try {
-		fh = await dir.getFileHandle(name);
-	} catch (_e) {
-		fh = await dir.getFileHandle(name, { create: true });
-	}
+	const { handle: fh, name: savedName } = await createUniqueFile(dir, name);
 	const w = await fh.createWritable();
 	await w.write(blob);
 	await w.close();
-	return { ok: true, path: parts.join("/") };
+	return { ok: true, path: [...parts.slice(0, -1), savedName].join("/") };
 }
 
 function downloadViaBrowser(item, ask) {

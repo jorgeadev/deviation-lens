@@ -1,6 +1,6 @@
 {
 	"name": "deviation-lens",
-	"version": "0.1.0-alpha.1",
+	"version": "0.2.0-alpha.1",
 	"private": true,
 	"description": "pnpm monorepo for the Deviation Lens extension, product site, and project tooling.",
 	"packageManager": "pnpm@12.9.1",
@@ -10,6 +10,7 @@
 		"format:check": "pnpm exec biome format .",
 		"lint": "pnpm exec biome lint .",
 		"check:biome": "pnpm exec biome check .",
+		"version:set": "node packages/tools/scripts/release/set-version.mjs",
 		"pack:extension": "node packages/tools/scripts/release/pack-extension.mjs",
 		"publish:extension": "pnpm run pack:extension",
 		"test:smoke": "pnpm --filter @deviation-lens/tools run smoke",

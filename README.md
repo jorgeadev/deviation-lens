@@ -2,7 +2,7 @@
 
 Deviation Lens is the Chrome extension in [`apps/extension/`](apps/extension/) for finding image variants on the page you are viewing, comparing their available quality, and saving the images you choose.
 
-**Version:** `0.1.0-alpha.1` · **Status:** Alpha · **Minimum Chrome version:** 141
+**Version:** `0.2.0-alpha.1` · **Status:** Alpha · **Minimum Chrome version:** 141
 
 > The extension is in active development. Features and behavior may change before a stable release.
 

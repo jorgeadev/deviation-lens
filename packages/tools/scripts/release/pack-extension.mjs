@@ -2,6 +2,7 @@ import { deflateRawSync } from "node:zlib";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { PRERELEASE_VERSION, VERSIONED_PAGES } from "./versioned-files.mjs";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(scriptDir, "../../../..");
@@ -18,6 +19,14 @@ if (!version || extension.version !== version || manifest.version_name !== versi
 }
 if (manifest.version !== version.split("-")[0]) {
 	throw new Error(`Chrome manifest version ${manifest.version} does not match app version ${version.split("-")[0]}.`);
+}
+
+for (const page of VERSIONED_PAGES) {
+	const found = (await fs.readFile(path.join(rootDir, page), "utf8")).match(PRERELEASE_VERSION) || [];
+	const stale = found.filter((value) => value !== version);
+	if (!found.length || stale.length) {
+		throw new Error(`${page} does not show version ${version}${stale.length ? ` (found ${stale.join(", ")})` : ""}. Run pnpm version:set.`);
+	}
 }
 
 const files = [];
