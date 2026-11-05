@@ -122,3 +122,183 @@ html:has(.saverPage) {
 .saverStatus.err {
 	color: var(--amber);
 }
+
+.settingHeading {
+	margin: 20px 0 8px;
+	padding-top: 14px;
+	border-top: 1px solid var(--line);
+	font-size: 13px;
+}
+
+.templateLabel {
+	display: block;
+	color: var(--muted);
+	font-size: 12px;
+}
+
+.templateRow {
+	margin-top: 4px;
+}
+
+.templateInput {
+	flex: 1 1 240px;
+	min-width: 0;
+	padding: 6px 8px;
+	color: var(--text);
+	background: var(--panel);
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	font: inherit;
+	font-size: 13px;
+}
+
+.templateHelp {
+	margin: 8px 0 0;
+	color: var(--muted);
+	font-size: 12px;
+	overflow-wrap: anywhere;
+}
+
+.templateHelp b {
+	color: var(--text);
+	font-weight: 600;
+}
+
+.historyCount {
+	align-self: center;
+	color: var(--muted);
+	font-size: 12px;
+}
+
+.settingHeading.first {
+	margin-top: 0;
+	padding-top: 0;
+	border-top: 0;
+}
+
+.saverMain .scanSettings {
+	margin: 0;
+}
+
+.settingField {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	margin-bottom: 8px;
+	padding: 10px 12px;
+	border: 1px solid var(--line);
+	border-radius: 11px;
+	background: linear-gradient(145deg, #202832, #1a2027);
+}
+
+.dropdown {
+	position: relative;
+	flex: none;
+	width: 190px;
+}
+
+.dropdownButton {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	width: 100%;
+	padding: 7px 10px;
+	color: var(--text);
+	background: #12171d;
+	border: 1px solid #596675;
+	border-radius: 8px;
+	font: inherit;
+	font-size: 12.5px;
+	cursor: pointer;
+	transition:
+		border-color 120ms ease,
+		box-shadow 120ms ease;
+}
+
+.dropdownButton::after {
+	content: "";
+	width: 7px;
+	height: 7px;
+	margin: -3px 2px 0 0;
+	border: solid var(--muted);
+	border-width: 0 1.5px 1.5px 0;
+	transform: rotate(45deg);
+	transition: transform 120ms ease;
+}
+
+.dropdownButton[aria-expanded="true"]::after {
+	margin-top: 3px;
+	transform: rotate(-135deg);
+}
+
+.dropdownButton:hover {
+	border-color: #7b8a9b;
+}
+
+.dropdownButton:focus-visible,
+.dropdownButton[aria-expanded="true"] {
+	border-color: var(--green);
+	box-shadow: 0 0 0 3px rgba(5, 204, 71, 0.14);
+	outline: none;
+}
+
+.dropdownList {
+	position: absolute;
+	z-index: 10;
+	top: calc(100% + 5px);
+	left: 0;
+	right: 0;
+	margin: 0;
+	padding: 4px;
+	list-style: none;
+	background: #1a2027;
+	border: 1px solid #465366;
+	border-radius: 10px;
+	box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+}
+
+.dropdownOption {
+	position: relative;
+	padding: 7px 26px 7px 9px;
+	border-radius: 7px;
+	cursor: pointer;
+}
+
+.dropdownOption.active {
+	background: rgba(255, 255, 255, 0.07);
+}
+
+.dropdownLabel,
+.dropdownHint {
+	display: block;
+}
+
+.dropdownLabel {
+	color: var(--text);
+	font-size: 12.5px;
+}
+
+.dropdownHint {
+	margin-top: 1px;
+	color: var(--muted);
+	font-size: 10.5px;
+}
+
+.dropdownOption[aria-selected="true"] .dropdownLabel {
+	color: var(--green);
+	font-weight: 600;
+}
+
+.dropdownOption[aria-selected="true"]::after {
+	content: "";
+	position: absolute;
+	top: 11px;
+	right: 11px;
+	width: 5px;
+	height: 9px;
+	border: solid var(--green);
+	border-width: 0 2px 2px 0;
+	transform: rotate(45deg);
+}

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Deviation Lens | Download folder</title>
+  <title>Deviation Lens | Settings</title>
   <link rel="stylesheet" href="popup.css">
   <link rel="stylesheet" href="saver.css">
 </head>
@@ -12,12 +12,13 @@
     <header class="top">
       <img src="icons/icon48.png" alt="" class="logo">
       <div class="titles">
-        <div class="app-title"><div class="app">Deviation Lens</div><span class="app-version" title="Version 0.1.0-alpha.1">0.1.0-alpha.1</span></div>
-        <div class="page">Download folder</div>
+        <div class="app-title"><div class="app">Deviation Lens</div><span class="app-version" title="Version 0.2.0">0.2.0</span></div>
+        <div class="page">Settings</div>
       </div>
     </header>
 
   <main class="saverMain">
+    <h2 class="settingHeading first">Download location</h2>
     <p class="saverCurrent">Saving to: <b id="curMode">Default</b></p>
 
     <div class="modeList">
@@ -39,7 +40,7 @@
         <input type="radio" name="mode" value="ask">
         <span>
           <b>Ask every time</b>
-          <small>A native Save As dialog opens for every download.</small>
+          <small>A native Save As dialog opens for every file or ZIP.</small>
         </span>
       </label>
     </div>
@@ -60,9 +61,112 @@
     </div>
 
     <div id="status" class="saverStatus"></div>
+
+    <h2 class="settingHeading">Multiple images</h2>
+    <div class="scanSettings">
+      <div class="exploreSetting">
+        <label class="scanOption">
+          <input type="checkbox" id="chkZip">
+          <span class="settingCopy">
+            <span class="settingTitle">Save multiple images as one ZIP</span>
+            <span class="settingDescription">Applies to Download all, Download selected and profile ranges. Each ZIP includes a manifest.csv listing the artist, title and source of every file. Turn this off to save separate files.</span>
+          </span>
+        </label>
+      </div>
+    </div>
+
+    <h2 class="settingHeading">File names</h2>
+    <label class="templateLabel" for="inpTemplate">Name template</label>
+    <div class="saverRow templateRow">
+      <input type="text" id="inpTemplate" class="templateInput" spellcheck="false" autocomplete="off" placeholder="Automatic">
+      <button type="button" id="btnTemplateReset" class="btn ghost">Use automatic names</button>
+    </div>
+    <p class="templateHelp">Use <code>{artist}</code> <code>{title}</code> <code>{date}</code> <code>{id}</code> <code>{width}</code> <code>{height}</code>. A <code>/</code> creates a folder, for example <code>{artist}/{date}_{title}</code>. The extension is added for you.</p>
+    <p class="templateHelp">Example: <b id="templatePreview"></b></p>
+
+    <h2 class="settingHeading">Results</h2>
+    <div class="settingField">
+      <div>
+        <div class="settingTitle" id="minSizeLabel">Minimum image size</div>
+        <div class="settingDescription">Hides images smaller than this on their longest side. Images with unknown dimensions stay visible.</div>
+      </div>
+      <div id="minSizeDropdown"></div>
+    </div>
+    <div class="scanSettings">
+      <div class="exploreSetting">
+        <label class="scanOption">
+          <input type="checkbox" id="chkBestOnly">
+          <span class="settingCopy">
+            <span class="settingTitle">Best only</span>
+            <span class="settingDescription">Show only the best image of every artwork on galleries and other multi-image pages.</span>
+          </span>
+        </label>
+      </div>
+      <div class="exploreSetting">
+        <label class="scanOption">
+          <input type="checkbox" id="chkSmallVariants">
+          <span class="settingCopy">
+            <span class="settingTitle">Small variants</span>
+            <span class="settingDescription">Show scaled and cropped thumbnails found on the page.</span>
+          </span>
+        </label>
+      </div>
+    </div>
+
+    <h2 class="settingHeading">Scanning</h2>
+    <div class="scanSettings">
+      <div class="exploreSetting">
+        <label class="scanOption">
+          <input type="checkbox" id="chkExplore">
+          <span class="settingCopy">
+            <span class="settingTitle">Include Explore sections</span>
+            <span class="settingDescription">Recent Deviations, Community Features, and posts from deviants you watch.</span>
+          </span>
+        </label>
+      </div>
+      <div class="exploreSetting">
+        <label class="scanOption">
+          <input type="checkbox" id="chkAnyPage">
+          <span class="settingCopy">
+            <span class="settingTitle">Find images on any page</span>
+            <span class="settingDescription">Scan websites outside DeviantArt. Press Rescan in the panel on a site to grant Chrome access to it.</span>
+          </span>
+        </label>
+      </div>
+    </div>
+
+    <h2 class="settingHeading">Already saved images</h2>
+    <div class="scanSettings">
+      <div class="exploreSetting">
+        <label class="scanOption">
+          <input type="checkbox" id="chkRemember">
+          <span class="settingCopy">
+            <span class="settingTitle">Remember saved images and skip them</span>
+            <span class="settingDescription">Marks artwork you saved with Deviation Lens, and leaves it out of Download all and profile ranges. The list stays in this browser and is never sent anywhere.</span>
+          </span>
+        </label>
+      </div>
+    </div>
+    <div class="saverRow">
+      <button type="button" id="btnClearHistory" class="btn ghost">Clear history</button>
+      <span id="historyCount" class="historyCount"></span>
+    </div>
+
+    <h2 class="settingHeading">About</h2>
+    <div class="settingField">
+      <div>
+        <div class="settingTitle">Version <span id="aboutVersion"></span></div>
+        <div class="settingDescription">See what changed and what was fixed in each version.</div>
+      </div>
+      <a id="linkChangelog" class="btn ghost" href="https://jorgeadev.github.io/deviation-lens/changelog.html" target="_blank" rel="noopener noreferrer">View changelog</a>
+    </div>
   </main>
   </div>
 
+  <script src="lib/naming.js"></script>
+  <script src="lib/history.js"></script>
+  <script src="lib/folder.js"></script>
+  <script src="lib/dropdown.js"></script>
   <script src="saver.js"></script>
 </body>
 </html>

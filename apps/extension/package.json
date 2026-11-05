@@ -1,9 +1,9 @@
 {
 	"name": "@deviation-lens/extension",
-	"version": "0.1.0-alpha.1",
+	"version": "0.2.0",
 	"private": true,
 	"description": "Deviation Lens browser extension for finding and downloading DeviantArt artwork at the best available quality.",
 	"scripts": {
-		"check": "node --check background.js && node --check content.js && node --check popup.js && node --check saver.js"
+		"check": "node --check background.js && node --check content.js && node --check popup.js && node --check saver.js && node --check offscreen.js && node --check lib/naming.js && node --check lib/zip.js && node --check lib/folder.js && node --check lib/history.js && node --check lib/dropdown.js"
 	}
 }

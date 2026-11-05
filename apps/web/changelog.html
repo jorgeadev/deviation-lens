@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="New features, changes, and fixes in each version of Deviation Lens.">
+  <title>Changelog | Deviation Lens</title>
+  <link rel="icon" type="image/png" href="assets/icon48.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#changelog-content">Skip to content</a>
+  <header class="site-header"><a class="brand" href="index.html" aria-label="Deviation Lens home"><img src="assets/icon48.png" alt="" width="36" height="36"><span class="brand-name">Deviation Lens</span><span class="brand-version" title="Version 0.2.0">0.2.0</span></a><button type="button" class="menu-toggle" aria-expanded="false" aria-controls="main-nav" aria-label="Open navigation"><span></span><span></span></button><nav id="main-nav" aria-label="Main navigation"><a href="index.html">Home</a><a class="nav-cta" href="index.html#install">Get the extension</a></nav></header>
+  <main id="changelog-content" class="privacy-page changelog-page">
+    <p class="eyebrow">Changelog</p>
+    <h1>What changed, version by version.</h1>
+    <p>New features, changes, and fixes in each release of Deviation Lens, newest first. Found a problem? <a href="https://github.com/jorgeadev/deviation-lens/issues" target="_blank" rel="noopener noreferrer">Report it on GitHub</a>.</p>
+
+    <article class="release" id="v0.2.0">
+      <header class="release-heading">
+        <h2>0.2.0</h2>
+        <time datetime="2026-11">November 2026</time>
+      </header>
+      <h3 class="release-kind added">Added</h3>
+      <ul>
+        <li>Saving two or more images now creates one ZIP file. This covers Download all, Download selected, and profile date ranges.</li>
+        <li>Each ZIP includes a manifest.csv listing the artist, title, date, source page, and size of every file.</li>
+        <li>A ZIP keeps building if you close the side panel, and you can cancel it while it runs.</li>
+        <li>If some images can’t be added to a ZIP, the rest are still saved, and you can retry the others as separate files.</li>
+        <li>A settings page, opened from the new gear icon, with every option in one place.</li>
+        <li>Your first download now asks where files should go: a folder you choose, a Save As dialog each time, or your Downloads folder.</li>
+        <li>A minimum image size filter: HD, Full HD, QHD, or 4K and larger.</li>
+        <li>File name templates such as <code>{artist}/{date}_{title}</code>, which can also create folders.</li>
+        <li>An optional history that marks artwork you already saved and skips it in bulk downloads. It is off by default and stays in your browser.</li>
+        <li>This changelog.</li>
+      </ul>
+      <h3 class="release-kind changed">Changed</h3>
+      <ul>
+        <li>The gear icon replaces the Folder button in the side panel.</li>
+        <li>Best only, Small variants, Include Explore sections, and Find images on any page moved from the side panel to the settings page.</li>
+        <li>The side panel shows a note when a filter is hiding images.</li>
+        <li>“Ask every time” now opens one Save As dialog per ZIP instead of one per image.</li>
+        <li>Fewer permissions: the activeTab permission is gone, built-in site access is HTTPS only, and DeviantArt pages can no longer read any of the extension’s files. A new offscreen permission builds ZIP files, with no new install warning expected.</li>
+        <li>Removed an unused sidebar experiment from the package.</li>
+        <li>Version numbers are now plain, such as 0.2.0, without an alpha label. Deviation Lens is still in early access until 1.0.</li>
+      </ul>
+      <h3 class="release-kind fixed">Fixed</h3>
+      <ul>
+        <li>Saving to a custom folder no longer overwrites an existing file with the same name.</li>
+        <li>If Chrome drops access to your custom folder, downloading now asks for access again instead of failing.</li>
+        <li>Very long file names keep their extension when shortened.</li>
+        <li>Files can no longer take a name that Windows reserves, such as CON or NUL.</li>
+      </ul>
+    </article>
+
+    <article class="release" id="v0.1.0-alpha.1">
+      <header class="release-heading">
+        <h2>0.1.0-alpha.1</h2>
+        <time datetime="2026-10">October 2026</time>
+      </header>
+      <h3 class="release-kind added">Added</h3>
+      <ul>
+        <li>First public alpha.</li>
+        <li>Scan DeviantArt pages for supported images and their available variants.</li>
+        <li>Compare image dimensions, estimated file sizes, and quality details in the side panel.</li>
+        <li>Exclude Explore sections by default, with a saved option to include them.</li>
+        <li>Scan other websites after enabling Find images on any page and granting Chrome access.</li>
+        <li>Download the best version, your selected images, or all results, or copy image URLs.</li>
+        <li>Download a profile’s artwork by date range.</li>
+        <li>Choose where downloads are saved.</li>
+      </ul>
+    </article>
+  </main>
+  <footer class="site-footer"><span>© <span id="year"></span> Deviation Lens</span><a href="index.html">Home</a></footer>
+  <script src="app.js"></script>
+</body>
+</html>

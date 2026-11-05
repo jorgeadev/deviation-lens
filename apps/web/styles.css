@@ -718,6 +718,18 @@ h1 {
 .workflow {
 	padding-block: 88px;
 }
+.whats-new > .section-shell {
+	padding-block: 44px;
+}
+
+.whats-new .eyebrow {
+	margin: 0 0 28px;
+}
+
+.whats-new .feature-grid {
+	padding: 0;
+}
+
 .section-heading {
 	display: flex;
 	align-items: flex-end;
@@ -1052,6 +1064,70 @@ h1 {
 .policy-contact a {
 	text-decoration: underline;
 	text-underline-offset: 3px;
+}
+.changelog-page a {
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+.release {
+	margin-top: 44px;
+	padding-top: 32px;
+	border-top: 1px solid var(--line);
+	scroll-margin-top: 24px;
+}
+.release-heading {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px 12px;
+}
+.privacy-page .release-heading h2 {
+	margin: 0;
+	font-size: 26px;
+}
+.release-heading time {
+	color: var(--muted);
+	font-size: 14px;
+}
+.release:first-of-type .release-heading::after {
+	content: "Latest";
+	padding: 3px 9px;
+	border-radius: 20px;
+	color: var(--forest);
+	background: var(--mint);
+	font-size: 12px;
+	font-weight: 650;
+}
+.release-kind {
+	display: inline-block;
+	margin: 26px 0 0;
+	padding: 3px 10px;
+	border-radius: 6px;
+	font-size: 13px;
+	font-weight: 650;
+}
+.release-kind.added {
+	color: var(--forest);
+	background: var(--mint);
+}
+.release-kind.changed {
+	color: #1f4f8f;
+	background: #e7f0fb;
+}
+.release-kind.fixed {
+	color: #8a4b10;
+	background: #fbf0e3;
+}
+.release ul {
+	margin: 12px 0 0;
+	padding-left: 20px;
+}
+.release li + li {
+	margin-top: 7px;
+}
+.release code {
+	font-size: 0.9em;
+	overflow-wrap: anywhere;
 }
 body:has(.privacy-page) .site-footer {
 	width: min(820px, calc(100% - 48px));

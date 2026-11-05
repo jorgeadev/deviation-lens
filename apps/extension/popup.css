@@ -161,36 +161,6 @@ body {
 	background: transparent;
 }
 
-.chk {
-	color: var(--muted);
-	font-size: 11.5px;
-	display: flex;
-	align-items: center;
-	gap: 4px;
-	cursor: pointer;
-	user-select: none;
-	white-space: nowrap;
-}
-
-.folderBtn {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-}
-
-.folderBtn .folderIcon {
-	display: flex;
-	color: var(--green);
-}
-
-.folderBtn .folderIcon svg {
-	display: block;
-}
-
-.toolbar .chk:first-of-type {
-	margin-left: auto;
-}
-
 .scanSettings {
 	margin: 8px 10px 0;
 	overflow: hidden;
@@ -293,10 +263,6 @@ body {
 	font-size: 10.5px;
 	line-height: 1.4;
 	white-space: normal;
-}
-
-.chk input {
-	accent-color: var(--green);
 }
 
 .rangeBox {
@@ -608,6 +574,11 @@ body {
 	border-color: rgba(240, 180, 41, 0.5);
 }
 
+.chip.saved {
+	color: var(--green);
+	border-color: rgba(5, 204, 71, 0.5);
+}
+
 .rowActions {
 	display: flex;
 	flex-direction: column;
@@ -667,10 +638,29 @@ body {
 	text-align: center;
 }
 
+.jobRow {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.jobRow .btn {
+	flex: none;
+	margin-top: 6px;
+}
+
 .progress {
+	flex: 1;
+	min-width: 0;
 	margin-top: 6px;
 	font-size: 11.5px;
 	color: var(--muted);
+	overflow-wrap: anywhere;
+}
+
+.noticeAction {
+	display: block;
+	margin-top: 6px;
 }
 
 .empty {
@@ -683,4 +673,94 @@ body {
 	font-size: 14px;
 	color: var(--text);
 	margin-bottom: 4px;
+}
+
+.panelIcon {
+	display: grid;
+	place-items: center;
+	width: 30px;
+	height: 30px;
+	flex: none;
+	margin-left: auto;
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	background: var(--panel-2);
+	color: var(--muted);
+	cursor: pointer;
+	transition:
+		color 0.12s,
+		background 0.12s,
+		border-color 0.12s;
+}
+
+.panelIcon:hover,
+.panelIcon:focus-visible {
+	color: var(--text);
+	background: #2a3442;
+	border-color: #465366;
+}
+
+.saveChoice {
+	width: min(340px, calc(100vw - 32px));
+	padding: 16px;
+	color: var(--text);
+	background: var(--bg);
+	border: 1px solid var(--line);
+	border-radius: 14px;
+}
+
+.saveChoice::backdrop {
+	background: rgba(4, 7, 10, 0.72);
+}
+
+.saveChoice h2 {
+	margin: 0 0 6px;
+	font-size: 15px;
+}
+
+.saveChoice p {
+	margin: 0;
+	color: var(--muted);
+	font-size: 12px;
+	line-height: 1.45;
+}
+
+.saveChoiceOptions {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-top: 14px;
+}
+
+.saveChoiceOption {
+	display: block;
+	width: 100%;
+	padding: 10px 12px;
+	text-align: left;
+}
+
+.saveChoiceOption b,
+.saveChoiceOption small {
+	display: block;
+}
+
+.saveChoiceOption b {
+	font-size: 13px;
+}
+
+.saveChoiceOption small {
+	margin-top: 2px;
+	font-size: 11px;
+	font-weight: 400;
+	opacity: 0.8;
+}
+
+.saveChoice .saveChoiceError {
+	margin-top: 10px;
+	color: var(--amber);
+}
+
+.saveChoiceCancel {
+	display: block;
+	margin: 12px auto 0;
 }
