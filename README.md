@@ -2,6 +2,8 @@
 
 Deviation Lens is the Chrome extension in [`apps/extension/`](apps/extension/) for finding image variants on the page you are viewing, comparing their available quality, and saving the images you choose.
 
+[![Watch the Deviation Lens promo video](apps/web/assets/0.2.0/promo-readme.jpg)](https://jorgeadev.github.io/deviation-lens/#video)
+
 **Version:** `0.2.0` · **Status:** Early access · **Minimum Chrome version:** 141
 
 > The extension is in active development. Features and behavior may change before a stable release.
@@ -23,6 +25,18 @@ Deviation Lens is the Chrome extension in [`apps/extension/`](apps/extension/) f
 Results depend on the page and its image host. Deviation Lens does not control which image variants a source makes available.
 
 See what changed in each version in the [changelog](apps/web/changelog.html).
+
+## Screenshots
+
+These show the extension with sample artwork and data.
+
+| Save your picks as one ZIP | Compare every version |
+| --- | --- |
+| ![Side panel with three selected artworks and a ZIP being prepared](apps/web/assets/0.2.0/download-your-picks.png) | ![Side panel comparing three sizes of one artwork, with the best one marked](apps/web/assets/0.2.0/compare-best-quality.png) |
+
+| Find images on the page | Set it up your way |
+| --- | --- |
+| ![Side panel listing image versions beside an artwork page](apps/web/assets/0.2.0/find-image-variants.png) | ![Settings page with filters and scanning options](apps/web/assets/0.2.0/scan-preferences.png) |
 
 ## Install
 
@@ -71,6 +85,7 @@ Common commands:
 | `pnpm lint` | Run Biome lint rules. |
 | `pnpm test:unit` | Run unit tests for the ZIP writer, file naming, and the permissions list. |
 | `pnpm shots` | Build the website images and store screenshots for the current version in `apps/web/assets/<version>/`. |
+| `pnpm video` | Render the promo video and its posters for the current version in `apps/web/assets/<version>/`. Requires `ffmpeg`. |
 | `pnpm test:smoke` | Run the save-folder support smoke check. |
 | `pnpm test:e2e` | Run browser end-to-end checks. |
 | `pnpm test:e2e:zip` | Run browser checks for ZIP downloads, filters, templates, and history. |
