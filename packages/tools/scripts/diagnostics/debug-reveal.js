@@ -42,7 +42,7 @@ function findChrome() {
 						y: r.y + r.height / 2,
 						w: img.naturalWidth,
 						h: img.naturalHeight,
-						cls: (`${img.className}`).slice(0, 60),
+						cls: `${img.className}`.slice(0, 60),
 					};
 				}
 			}
@@ -85,7 +85,7 @@ function findChrome() {
 					.map((i) => ({
 						w: i.naturalWidth,
 						h: i.naturalHeight,
-						cls: (`${i.className}`).slice(0, 60),
+						cls: `${i.className}`.slice(0, 60),
 						src: (i.currentSrc || i.src).slice(0, 120),
 					})),
 				portals: document.querySelectorAll(".ReactModalPortal").length,

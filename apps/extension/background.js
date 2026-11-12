@@ -133,7 +133,7 @@ async function startDownload(item) {
 		try {
 			return await writeToCustomFolder(item);
 		} catch (e) {
-			return { ok: false, error: String((e?.message) || e) };
+			return { ok: false, error: String(e?.message || e) };
 		}
 	}
 	return downloadViaBrowser(item, saveMode === "ask");
@@ -170,7 +170,7 @@ async function fetchInfo(url) {
 		if (r.ok) return { ok: true, status: r.status, bytes: len ? Number(len) : null, type, finalUrl: r.url };
 		return { ok: false, status: r.status, bytes: null, type, finalUrl: r.url };
 	} catch (e) {
-		return { ok: false, status: 0, bytes: null, type: null, finalUrl: url, error: String((e?.message) || e) };
+		return { ok: false, status: 0, bytes: null, type: null, finalUrl: url, error: String(e?.message || e) };
 	} finally {
 		guard.done();
 	}

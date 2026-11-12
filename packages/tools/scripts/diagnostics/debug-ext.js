@@ -17,7 +17,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 	await sleep(8000);
 	const targets = browser.targets().map((t) => ({ type: t.type(), url: t.url().slice(0, 120) }));
 	console.log("TARGETS:");
-	targets.forEach((t) => { console.log(" ", JSON.stringify(t)); });
+	targets.forEach((t) => {
+		console.log(" ", JSON.stringify(t));
+	});
 	const pages = await browser.pages();
 	const p = pages[0] || (await browser.newPage());
 	try {

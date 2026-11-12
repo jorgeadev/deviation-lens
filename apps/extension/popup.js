@@ -63,9 +63,6 @@ function svgIcon(paths, size) {
 	return svg;
 }
 
-const _esc = (s) =>
-	String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-
 function fmtBytes(b) {
 	if (b == null || !Number.isFinite(b)) return "…";
 	const units = ["B", "KB", "MB", "GB"];
@@ -142,10 +139,19 @@ async function ensureContentScript(tab, permissionGranted) {
 		if (!allowed) return false;
 	}
 	try {
+		// A copy left behind by an earlier version of the extension no longer answers, and would stop a new one from starting.
+		await chrome.scripting.executeScript({
+			target: { tabId },
+			func: () => {
+				const stale = window.__DA_IMAGE_HUNTER__;
+				if (typeof stale?.stop === "function") stale.stop();
+				delete window.__DA_IMAGE_HUNTER__;
+			},
+		});
 		await chrome.scripting.executeScript({ target: { tabId }, files: ["content.js"] });
 	} catch (_e) {}
 	const ping2 = await sendTo(tabId, { type: "DA_PING" });
-	return !!(ping2?.ok);
+	return !!ping2?.ok;
 }
 
 function showNotice(text, kind, action) {
@@ -198,7 +204,9 @@ function allImages() {
 	state.data.assets = state.data.assets.filter((asset) => asset.images.length > 0);
 	const out = [];
 	state.data.assets.forEach((asset) => {
-		asset.images.forEach((img) => { out.push({ img, asset }); });
+		asset.images.forEach((img) => {
+			out.push({ img, asset });
+		});
 	});
 	return out;
 }
@@ -457,7 +465,9 @@ function renderList(keepScroll) {
 			head.appendChild(best);
 		}
 		list.appendChild(head);
-		rows.forEach((img) => { list.appendChild(buildRow(img, asset)); });
+		rows.forEach((img) => {
+			list.appendChild(buildRow(img, asset));
+		});
 	});
 
 	if (total > shown) {
@@ -959,7 +969,7 @@ async function scan(deep, userInitiated) {
 		const res = await sendTo(tabId, msg);
 		if (requestId !== scanRequestId) return;
 		if (!res?.ok) {
-			showNotice(`Could not scan this page: ${(res?.error) || "unknown error"}`, "err");
+			showNotice(`Could not scan this page: ${res?.error || "unknown error"}`, "err");
 			return;
 		}
 		state.data = res;
@@ -991,7 +1001,7 @@ async function scan(deep, userInitiated) {
 		loadSizes();
 	} catch (error) {
 		if (requestId === scanRequestId) {
-			showNotice(`Could not scan this page: ${(error?.message) || error}`, "err");
+			showNotice(`Could not scan this page: ${error?.message || error}`, "err");
 			setProgress("");
 		}
 	} finally {
@@ -1088,7 +1098,7 @@ async function scanRange() {
 	const res = await sendTo(state.tabId, { type: "DA_PROFILE_SCAN", artist, from, to, maxPages: 120 });
 	$("#btnRangeScan").disabled = false;
 	if (!res?.ok) {
-		setRangeStatus(`Scan failed: ${(res?.error) || "unknown error"}`, "warn");
+		setRangeStatus(`Scan failed: ${res?.error || "unknown error"}`, "warn");
 		return;
 	}
 	state.range = { items: res.items, busy: false };
@@ -1159,7 +1169,11 @@ function showRangeResults(res, from, to) {
 	state.sizes = {};
 	state.renderLimit = 40;
 	state.selected = new Set();
-	assets.forEach((a) => { a.images.forEach((img) => { state.selected.add(img.url); }); });
+	assets.forEach((a) => {
+		a.images.forEach((img) => {
+			state.selected.add(img.url);
+		});
+	});
 	$("#pageMeta").textContent = `${page.artist} \u2014 published ${from} \u2192 ${to}`;
 	renderSummary();
 	renderList();
@@ -1233,14 +1247,7 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
 	if (msg && msg.type === "DA_PROFILE_PROGRESS") {
 		setRangeStatus(`Scanning page ${msg.page}… ${msg.found} match(es) so far`);
 	}
-	if (
-		msg &&
-		msg.type === "DA_SCAN_PROGRESS" &&
-		sender.tab &&
-		sender.tab.id === state.tabId &&
-		msg.scanId === scanRequestId &&
-		msg.data?.ok
-	) {
+	if (msg && msg.type === "DA_SCAN_PROGRESS" && sender.tab && sender.tab.id === state.tabId && msg.scanId === scanRequestId && msg.data?.ok) {
 		state.data = msg.data;
 		state.selected = new Set();
 		allImages().forEach(({ img }) => {
@@ -1366,6 +1373,6 @@ chrome.tabs.onActivated.addListener(async ({ tabId, windowId }) => {
 		}
 	} catch (error) {
 		$("#pageMeta").textContent = "Could not read the active tab";
-		showNotice(`Could not open the active tab: ${(error?.message) || error}`, "err");
+		showNotice(`Could not open the active tab: ${error?.message || error}`, "err");
 	}
 });

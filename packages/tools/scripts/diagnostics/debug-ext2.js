@@ -23,6 +23,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 	await sleep(6000);
 	const targets = browser.targets().map((t) => ({ type: t.type(), url: t.url().slice(0, 120) }));
 	console.log("TARGETS after loadUnpacked:");
-	targets.forEach((t) => { console.log(" ", JSON.stringify(t)); });
+	targets.forEach((t) => {
+		console.log(" ", JSON.stringify(t));
+	});
 	await browser.close();
 })();

@@ -72,7 +72,7 @@ const state = (page) =>
 		log("status:", status.slice(0, 120));
 		log("DONE");
 	} catch (e) {
-		log("ERROR", (e?.message) || e);
+		log("ERROR", e?.message || e);
 		process.exitCode = 1;
 	} finally {
 		await browser.close();

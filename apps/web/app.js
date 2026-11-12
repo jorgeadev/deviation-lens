@@ -12,7 +12,8 @@ if (STORE_URL) {
 		link.textContent = "Add to Chrome";
 	});
 	const status = document.querySelector(".install-status");
-	if (status) status.textContent = "Install Deviation Lens from the Chrome Web Store. The extension is free, and its source is available on GitHub.";
+	if (status)
+		status.textContent = "Install Deviation Lens from the Chrome Web Store. The extension is free, and its source is available on GitHub.";
 }
 
 const menuToggle = document.querySelector(".menu-toggle");

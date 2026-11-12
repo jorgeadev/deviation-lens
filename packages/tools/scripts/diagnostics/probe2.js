@@ -34,7 +34,7 @@ const DEEP_SCAN_FN = () => {
 					h: el.naturalHeight,
 					rw: Math.round(r.width),
 					rh: Math.round(r.height),
-					cls: (`${el.className || ""}`).slice(0, 90),
+					cls: `${el.className || ""}`.slice(0, 90),
 					inLink: el.closest("a") ? (el.closest("a").getAttribute("href") || "").slice(0, 90) : null,
 				});
 			}
@@ -53,7 +53,7 @@ const DEEP_SCAN_FN = () => {
 					h: 0,
 					rw: Math.round(r.width),
 					rh: Math.round(r.height),
-					cls: (`${el.className || ""}`).slice(0, 90),
+					cls: `${el.className || ""}`.slice(0, 90),
 					inLink: el.closest("a") ? (el.closest("a").getAttribute("href") || "").slice(0, 90) : null,
 				});
 			}
@@ -185,7 +185,7 @@ async function probe(browser, { mobile, label, clickTarget }) {
 			links: Array.from(p.querySelectorAll("a")).map((a) => ({
 				href: (a.getAttribute("href") || "").slice(0, 300),
 				text: (a.textContent || "").trim().slice(0, 60),
-				cls: (`${a.className}`).slice(0, 80),
+				cls: `${a.className}`.slice(0, 80),
 			})),
 		})),
 	);
@@ -236,7 +236,7 @@ async function probe(browser, { mobile, label, clickTarget }) {
 		await probe(browser, { mobile: true, label: "mobile", clickTarget: "dmvm3vg" });
 		await probe(browser, { mobile: false, label: "desktop", clickTarget: "dmvm3vg" });
 	} catch (e) {
-		log("ERROR", (e?.stack) || e);
+		log("ERROR", e?.stack || e);
 	} finally {
 		await browser.close();
 		log("done");

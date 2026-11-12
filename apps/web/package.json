@@ -1,6 +1,6 @@
 {
 	"name": "deviation-lens-product-page",
-	"version": "0.2.0",
+	"version": "0.2.1",
 	"private": true,
 	"description": "Static product and privacy pages for Deviation Lens."
 }

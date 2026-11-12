@@ -1,6 +1,6 @@
 {
 	"name": "deviation-lens",
-	"version": "0.2.0",
+	"version": "0.2.1",
 	"private": true,
 	"description": "pnpm monorepo for the Deviation Lens extension, product site, and project tooling.",
 	"packageManager": "pnpm@12.9.1",

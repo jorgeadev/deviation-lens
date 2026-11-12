@@ -1,6 +1,9 @@
 (() => {
 	if (window.__DA_IMAGE_HUNTER__) return;
-	window.__DA_IMAGE_HUNTER__ = true;
+	// The panel retires this copy through stop() before it injects a new one, which it does when this copy no longer
+	// answers. That happens after the extension updates while the page stays open.
+	const instance = { stop: () => {} };
+	window.__DA_IMAGE_HUNTER__ = instance;
 
 	const WIX_HOST = /^images-wixmp-[a-z0-9]+\.wixmp\.com$/i;
 	const EXPLORE_HEADING = /^(?:explore\s+(?!more\b).+|from\s+deviants\s+you\s+watch)$/i;
@@ -53,7 +56,7 @@
 		if (!WIX_HOST.test(url.hostname)) {
 			if (!allowAnyPage || !/^https?:$/.test(url.protocol)) return null;
 			const genericExt = /\.(png|jpe?g|gif|webp|bmp|avif|svg|tiff?)$/i.exec(url.pathname);
-			if (!genericExt && !(record?.isImage)) return null;
+			if (!genericExt && !record?.isImage) return null;
 			const ext = genericExt ? genericExt[1].toLowerCase().replace("jpeg", "jpg") : "jpg";
 			return {
 				url: url.toString(),
@@ -71,7 +74,8 @@
 			};
 		}
 		if (url.pathname.includes("{") || url.pathname.includes("}")) return null;
-		const m = url.pathname.match(/^(\/f\/[^/]+\/[^/]+\.(png|jpe?g|gif|webp|bmp|avif))(\/v1\/.*)?$/i);
+		// Most artwork is served from /f/. Watermarked previews of paid artwork are served from /u/.
+		const m = url.pathname.match(/^(\/[fu]\/[^/]+\/[^/]+\.(png|jpe?g|gif|webp|bmp|avif))(\/v1\/.*)?$/i);
 		if (!m) return null;
 		const ext = m[2].toLowerCase() === "jpeg" ? "jpg" : m[2].toLowerCase();
 		const transform = m[3] || "";
@@ -291,7 +295,9 @@
 					"data-image-url",
 					"data-original-src",
 					"data-background-image",
-				] .forEach((a) => { add(img.getAttribute(a), info); });
+				].forEach((a) => {
+					add(img.getAttribute(a), info);
+				});
 				const pic = img.closest("picture");
 				if (pic) {
 					pic.querySelectorAll("source").forEach((s) => {
@@ -322,7 +328,9 @@
 			).forEach((el) => {
 				const info = { el, isImage: true, primary: true };
 				["data-src", "data-original", "data-lazy-src", "data-image", "data-image-url", "data-original-src", "data-background-image"].forEach(
-					(attr) => { add(el.getAttribute(attr), info); },
+					(attr) => {
+						add(el.getAttribute(attr), info);
+					},
 				);
 				addSrcset(el.getAttribute("data-srcset"), info);
 			});
@@ -349,16 +357,23 @@
 			});
 		}
 
+		const source = pageSource();
 		let scriptText = "";
-		document.querySelectorAll("script").forEach((s) => {
-			const t = s.textContent;
-			if (t?.includes("wixmp")) scriptText += `${t}\n`;
-		});
-		const normalized = scriptText.replace(/\\u002f/gi, "/").replace(/\\\//g, "/");
-		const re = /https?:\/\/images-wixmp-[a-z0-9]+\.wixmp\.com\/f\/[^"'\s\\<>]+/gi;
+		if (source.current) {
+			document.querySelectorAll("script").forEach((s) => {
+				const t = s.textContent;
+				if (t?.includes("wixmp")) scriptText += `${t}\n`;
+			});
+		} else if (source.fresh) {
+			scriptText = source.fresh.text;
+		}
+		const normalized = normalizeScripts(scriptText);
+		const re = /https?:\/\/images-wixmp-[a-z0-9]+\.wixmp\.com\/[fu]\/[^"'\s\\<>]+/gi;
 		let mm;
 		let guard = 0;
-		while (guard < 500) {
+		// A whole fetched page holds more addresses than the scripts alone.
+		const limit = source.current ? 500 : 3000;
+		while (guard < limit) {
 			mm = re.exec(normalized);
 			if (!mm) break;
 			add(mm[0], { fromScript: true });
@@ -385,7 +400,52 @@
 		return map;
 	}
 
-	function findDownloadUrl(mainBase, deviationId) {
+	const deviationIdOf = (pathname) => (/-(\d+)\/?$/.exec(pathname) || [])[1] || "";
+
+	// DeviantArt moves between pages without reloading. The page's meta tags and embedded scripts are not rewritten
+	// when it does, so after such a move they still describe the page that was loaded first.
+	function pageMetaIsCurrent() {
+		const declared =
+			document.querySelector('meta[property="og:url"]')?.content ||
+			document.querySelector('link[rel="canonical"]')?.href ||
+			performance.getEntriesByType("navigation")[0]?.name;
+		if (!declared) return true;
+		try {
+			const path = new URL(declared, location.href).pathname;
+			const id = deviationIdOf(location.pathname);
+			const declaredId = deviationIdOf(path);
+			if (id || declaredId) return id === declaredId;
+			return path.replace(/\/$/, "").toLowerCase() === location.pathname.replace(/\/$/, "").toLowerCase();
+		} catch (_e) {
+			return true;
+		}
+	}
+
+	// Set after an in-page move: the current page's own data, fetched because the document still holds the old page's.
+	let freshPage = null;
+
+	async function loadFreshPage() {
+		const url = location.href;
+		if (freshPage?.url === url) return;
+		freshPage = null;
+		try {
+			const res = await fetchWithTimeout(url, 8000);
+			if (!res.ok) return;
+			const html = await res.text();
+			if (location.href !== url) return;
+			const doc = new DOMParser().parseFromString(html, "text/html");
+			const image = doc.querySelector('meta[property="og:image"]')?.content || doc.querySelector('meta[name="twitter:image"]')?.content || "";
+			freshPage = { url, ogImage: image, text: normalizeScripts(html) };
+		} catch (_e) {}
+	}
+
+	// Where to read page data from: the document while it is current, otherwise the fetched copy when there is one.
+	function pageSource() {
+		if (pageMetaIsCurrent()) return { current: true, fresh: null };
+		return { current: false, fresh: freshPage?.url === location.href ? freshPage : null };
+	}
+
+	function findDownloadUrl(mainBase, deviationId, source) {
 		const found = new Set();
 		document.querySelectorAll('a[href*="/download/"]').forEach((a) => {
 			if (sectionBad(a)) return;
@@ -393,11 +453,15 @@
 			if (/deviantart\.com\/download\//i.test(href)) found.add(href);
 		});
 		let scriptText = "";
-		document.querySelectorAll("script").forEach((s) => {
-			const t = s.textContent;
-			if (t?.includes("download")) scriptText += `${t}\n`;
-		});
-		const normalized = scriptText.replace(/\\u002f/gi, "/").replace(/\\\//g, "/");
+		if (source.current) {
+			document.querySelectorAll("script").forEach((s) => {
+				const t = s.textContent;
+				if (t?.includes("download")) scriptText += `${t}\n`;
+			});
+		} else if (source.fresh) {
+			scriptText = source.fresh.text;
+		}
+		const normalized = normalizeScripts(scriptText);
 		const re = /https:\/\/www\.deviantart\.com\/download\/[^"'\s\\<>]+/gi;
 		let mm;
 		let guard = 0;
@@ -423,15 +487,23 @@
 		return scored.length === 1 ? scored[0].u : null;
 	}
 
-	function findMainBase(variantList) {
-		const og = document.querySelector('meta[property="og:image"]');
-		if (og?.content) {
-			const p = parseVariant(og.content);
-			if (p) return p.base;
-		}
-		const twitter = document.querySelector('meta[name="twitter:image"]');
-		if (twitter?.content) {
-			const p = parseVariant(twitter.content);
+	function findMainBase(variantList, source) {
+		if (source.current) {
+			const og = document.querySelector('meta[property="og:image"]');
+			if (og?.content) {
+				const p = parseVariant(og.content);
+				if (p) return p.base;
+			}
+			const twitter = document.querySelector('meta[name="twitter:image"]');
+			if (twitter?.content) {
+				const p = parseVariant(twitter.content);
+				if (p) return p.base;
+			}
+		} else {
+			const fetched = source.fresh?.ogImage && parseVariant(source.fresh.ogImage);
+			if (fetched) return fetched.base;
+			const shown = findMainArtworkElement(null);
+			const p = shown && parseVariant(shown.currentSrc || shown.src || "");
 			if (p) return p.base;
 		}
 		let best = null;
@@ -585,8 +657,9 @@
 
 		const isDeviantArt = location.hostname === "deviantart.com" || location.hostname.endsWith(".deviantart.com");
 		const isArtPage = isDeviantArt && /\/art\//.test(location.pathname);
-		const deviationId = (location.pathname.match(/-(\d+)\/?$/) || [])[1] || "";
-		let mainBase = findMainBase(variants);
+		const deviationId = deviationIdOf(location.pathname);
+		const source = pageSource();
+		let mainBase = findMainBase(variants, source);
 		if (!mainBase) {
 			let bestArea = 0;
 			variants.forEach((v) => {
@@ -597,7 +670,7 @@
 				}
 			});
 		}
-		const downloadUrl = isDeviantArt ? findDownloadUrl(mainBase, deviationId) : null;
+		const downloadUrl = isDeviantArt ? findDownloadUrl(mainBase, deviationId, source) : null;
 
 		const kept = variants.filter((v) => {
 			if (!v.base) return false;
@@ -657,6 +730,8 @@
 				mainBase,
 				downloadUrl,
 				downloadable,
+				// Where the page data came from: the document, a fetched copy after an in-page move, or only what is shown.
+				dataSource: source.current ? "document" : source.fresh ? "fetched" : "shown",
 				deepScanned: false,
 				portalOpened: false,
 				scannedAt: Date.now(),
@@ -667,7 +742,34 @@
 		};
 	}
 
+	let lastScannedUrl = "";
+
+	// Resolves once the page has stopped changing for a moment, or after a few seconds at most.
+	function waitForQuietPage() {
+		return new Promise((resolve) => {
+			let quiet = null;
+			const finish = () => {
+				observer.disconnect();
+				clearTimeout(quiet);
+				clearTimeout(limit);
+				resolve();
+			};
+			const observer = new MutationObserver(() => {
+				clearTimeout(quiet);
+				quiet = setTimeout(finish, 300);
+			});
+			observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["src", "srcset"] });
+			quiet = setTimeout(finish, 300);
+			const limit = setTimeout(finish, 2500);
+		});
+	}
+
 	async function scanProgressively(onProgress) {
+		// After moving to another page without a reload, the previous page's content can still be on screen.
+		const moved = lastScannedUrl && lastScannedUrl !== location.href;
+		lastScannedUrl = location.href;
+		const isArtwork = /(^|\.)deviantart\.com$/i.test(location.hostname) && /\/art\//.test(location.pathname);
+		await Promise.all([moved ? waitForQuietPage() : null, isArtwork && !pageMetaIsCurrent() ? loadFreshPage() : null]);
 		const records = collectCandidates();
 		const candidates = Array.from(records.values());
 		const batchSize = 200;
@@ -746,7 +848,7 @@
 			const v = parseVariant(img.currentSrc || img.src || "");
 			if (!v) return;
 			if (mainBase && v.base !== mainBase) return;
-			if (img.closest("a")) return;
+			if (img.closest("a") || sectionBad(img)) return;
 			const r = img.getBoundingClientRect();
 			const a = r.width * r.height;
 			if (a > area && r.width > 50 && r.height > 50) {
@@ -764,9 +866,15 @@
 		let portalOpened = false;
 		if (target) {
 			const known = new Set();
-			before.assets.forEach((a) => { a.images.forEach((i) => { known.add(i.url); }); });
+			before.assets.forEach((a) => {
+				a.images.forEach((i) => {
+					known.add(i.url);
+				});
+			});
 			const oldImgs = new WeakSet();
-			document.querySelectorAll("img").forEach((el) => { oldImgs.add(el); });
+			document.querySelectorAll("img").forEach((el) => {
+				oldImgs.add(el);
+			});
 			try {
 				target.scrollIntoView({ block: "center" });
 			} catch (_e) {}
@@ -969,15 +1077,42 @@
 		profileScan,
 	};
 
+	// False once the extension has been updated, reloaded or removed while this page stayed open.
+	const extensionAlive = () => {
+		try {
+			return !!chrome.runtime?.id;
+		} catch (_e) {
+			return false;
+		}
+	};
+
 	let observedPageUrl = location.href;
-	setInterval(() => {
+	const urlWatch = setInterval(() => {
+		if (!extensionAlive()) {
+			instance.stop();
+			return;
+		}
 		const currentUrl = location.href;
 		if (currentUrl === observedPageUrl) return;
 		observedPageUrl = currentUrl;
-		chrome.runtime.sendMessage({ type: "DA_PAGE_URL_CHANGED", url: currentUrl }).catch(() => {});
+		try {
+			chrome.runtime.sendMessage({ type: "DA_PAGE_URL_CHANGED", url: currentUrl }).catch(() => {});
+		} catch (_e) {
+			instance.stop();
+		}
 	}, 500);
 
-	chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+	instance.stop = () => {
+		clearInterval(urlWatch);
+		try {
+			chrome.runtime.onMessage.removeListener(onMessage);
+		} catch (_e) {}
+		if (window.__DA_IMAGE_HUNTER__ === instance) delete window.__DA_IMAGE_HUNTER__;
+	};
+
+	chrome.runtime.onMessage.addListener(onMessage);
+
+	function onMessage(msg, _sender, sendResponse) {
 		if (!msg || typeof msg !== "object") return;
 		if (msg.type === "DA_PING") {
 			sendResponse({ ok: true });
@@ -991,7 +1126,7 @@
 				chrome.runtime.sendMessage({ type: "DA_SCAN_PROGRESS", scanId: msg.scanId, data: partial, progress }).catch(() => {});
 			})
 				.then((result) => sendResponse(result))
-				.catch((e) => sendResponse({ ok: false, error: String((e?.message) || e) }));
+				.catch((e) => sendResponse({ ok: false, error: String(e?.message || e) }));
 			return true;
 		}
 		if (msg.type === "DA_DEEP_SCAN") {
@@ -999,14 +1134,14 @@
 			allowAnyPage = !!msg.allowAnyPage;
 			deepScan()
 				.then((r) => sendResponse(r))
-				.catch((e) => sendResponse({ ok: false, error: String((e?.message) || e) }));
+				.catch((e) => sendResponse({ ok: false, error: String(e?.message || e) }));
 			return true;
 		}
 		if (msg.type === "DA_PROFILE_SCAN") {
 			profileScan(msg)
 				.then((r) => sendResponse(r))
-				.catch((e) => sendResponse({ ok: false, error: String((e?.message) || e) }));
+				.catch((e) => sendResponse({ ok: false, error: String(e?.message || e) }));
 			return true;
 		}
-	});
+	}
 })();

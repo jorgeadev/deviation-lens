@@ -15,6 +15,8 @@ const PROFILE = path.join(OUT, "profile-zip");
 const PAGE = "https://www.deviantart.com/dutteart/art/Forest-Hobbit-Home-1383355420";
 // This deviation offers an original download, and exposes a higher-quality image than the page displays.
 const PAGE_WITH_ORIGINAL = "https://www.deviantart.com/nachr/art/Hobbit-Hole-1079563018";
+// A paid artwork. Its preview is served from /u/ on the image host, where other artwork is served from /f/.
+const PAGE_PAID = "https://www.deviantart.com/velvetmagicmist/art/Pink-petals-and-golden-skies-1408573459";
 const CHROME = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const MISSING_IMAGE = "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/00000000-0000-0000-0000-000000000000/does-not-exist.png";
 
@@ -589,6 +591,120 @@ const jobFinished = (popup, jobId) =>
 		for (const d of await downloads(popup)) known.add(d.id);
 		await setPrefs(popup, { saveMode: "default" });
 		log("PASS ZIP uses ask mode:", await text(popup, "#progress"));
+
+		// ---- Moving to another artwork without a reload lists the new artwork, not the one the page was loaded with.
+		// The file part of an image address, which is the same for every size of one artwork.
+		const listedFiles = () =>
+			popup.evaluate(() => [
+				...new Set([...document.querySelectorAll(".row")].map((row) => new URL(row.dataset.url).pathname.split("/v1/")[0])),
+			]);
+		const shownFile = () =>
+			tab.evaluate(() => {
+				let best = null;
+				let area = 0;
+				for (const img of document.querySelectorAll("img")) {
+					const box = img.getBoundingClientRect();
+					if (img.closest("a") || box.width * box.height <= area) continue;
+					area = box.width * box.height;
+					best = img;
+				}
+				return best ? new URL(best.currentSrc || best.src).pathname.split("/v1/")[0] : null;
+			});
+		await tab.goto(PAGE, { waitUntil: "networkidle2", timeout: 90000 });
+		await waitFor(
+			async () => /Forest Hobbit Home/.test(await text(popup, "#pageMeta")) && (await rowCount(popup)) > 0,
+			60000,
+			"scan of the first artwork",
+		);
+		await waitFor(() => popup.evaluate(() => !state.busy), 30000, "first scan to finish");
+		const firstFiles = await listedFiles();
+		assert.deepEqual(firstFiles, [await shownFile()], "the loaded artwork is the only one listed");
+		const nextArtwork = await tab.evaluate(() => {
+			const here = location.pathname;
+			const link = [...document.querySelectorAll('a[href*="/art/"]')].find(
+				(a) => a.querySelector("img") && a.getBoundingClientRect().width > 40 && new URL(a.href).pathname !== here,
+			);
+			link.scrollIntoView({ block: "center" });
+			return link.href;
+		});
+		let reloaded = false;
+		const noteReload = () => {
+			reloaded = true;
+		};
+		tab.once("load", noteReload);
+		await sleep(500);
+		const nextLink = await tab.evaluateHandle(
+			(href) => [...document.querySelectorAll('a[href*="/art/"]')].find((a) => a.href === href),
+			nextArtwork,
+		);
+		await nextLink.asElement().click();
+		await waitFor(() => tab.evaluate((href) => location.href === href, nextArtwork), 30000, "the page to move to the next artwork");
+		await waitFor(
+			async () => {
+				const files = await listedFiles();
+				return files.length > 0 && !files.includes(firstFiles[0]) && !(await popup.evaluate(() => state.busy));
+			},
+			60000,
+			"scan of the next artwork",
+		);
+		tab.off("load", noteReload);
+		assert.equal(reloaded, false, "the page moved without a reload");
+		assert.deepEqual(await listedFiles(), [await shownFile()], "the artwork now on the page is the only one listed");
+		const movedRoles = await popup.evaluate(() => [...document.querySelectorAll(".row")].map((row) => row.dataset.role));
+		assert.ok(movedRoles.includes("max"), "the best quality image is offered after moving");
+		assert.equal(await popup.evaluate(() => state.data.page.dataSource), "fetched", "the page's own data is read again after moving");
+		// A reload of the same artwork must not find anything that moving to it missed.
+		const listedPaths = () => popup.evaluate(() => [...document.querySelectorAll(".row")].map((row) => new URL(row.dataset.url).pathname));
+		const movedPaths = await listedPaths();
+		await tab.reload({ waitUntil: "networkidle2", timeout: 90000 });
+		await waitFor(
+			() => popup.evaluate(() => !state.busy && state.data?.page?.dataSource === "document" && document.querySelectorAll(".row").length > 0),
+			60000,
+			"scan of the reloaded artwork",
+		);
+		const missedByMoving = (await listedPaths()).filter((imagePath) => !movedPaths.includes(imagePath));
+		assert.deepEqual(missedByMoving, [], "moving lists every image a reload lists");
+		log(`PASS moving between artworks without a reload: ${movedRoles.length} rows for ${nextArtwork.split("/").pop()}`);
+
+		// ---- A page that still holds the previous version's script, as after an update, can be scanned again.
+		await popup.evaluate(async () => {
+			await chrome.scripting.executeScript({
+				target: { tabId: state.tabId },
+				func: () => {
+					window.__DA_IMAGE_HUNTER__.stop();
+					// What the previous version left on the page.
+					window.__DA_IMAGE_HUNTER__ = true;
+				},
+			});
+		});
+		const unanswered = await popup.evaluate(() =>
+			chrome.tabs.sendMessage(state.tabId, { type: "DA_PING" }).then(
+				() => false,
+				() => true,
+			),
+		);
+		assert.equal(unanswered, true, "the retired script no longer answers");
+		await click(popup, "#btnRescan");
+		await waitFor(
+			async () => (await rowCount(popup)) > 0 && !(await popup.evaluate(() => state.busy)),
+			60000,
+			"rescan after the script was replaced",
+		);
+		assert.deepEqual(await listedFiles(), [await shownFile()], "the rescan lists the artwork on the page");
+		log("PASS a leftover script from the previous version is replaced");
+
+		// ---- Paid artwork is served from another folder on the image host, and is still the one listed.
+		await tab.goto(PAGE_PAID, { waitUntil: "networkidle2", timeout: 90000 });
+		await waitFor(
+			async () => /velvetmagicmist/i.test(await text(popup, "#pageMeta")) && (await rowCount(popup)) > 0,
+			60000,
+			"scan of the paid artwork",
+		);
+		await waitFor(() => popup.evaluate(() => !state.busy), 30000, "paid artwork scan to finish");
+		const paidFiles = await listedFiles();
+		assert.deepEqual(paidFiles, [await shownFile()], "the paid artwork is the only one listed");
+		assert.match(paidFiles[0], /^\/u\//, "its preview comes from the /u/ folder");
+		log("PASS paid artwork preview found");
 
 		// ---- A page's original download is found, along with an upgraded image.
 		await tab.goto(PAGE_WITH_ORIGINAL, { waitUntil: "networkidle2", timeout: 90000 });

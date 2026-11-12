@@ -76,7 +76,7 @@ async function chooseFolder() {
 		setStatus(`Folder "${handle.name}" selected. Downloads will be written there.`, "ok");
 	} catch (e) {
 		if (e && e.name === "AbortError") setStatus("Folder selection cancelled.");
-		else setStatus(`Could not select the folder: ${(e?.message) || e}`, "err");
+		else setStatus(`Could not select the folder: ${e?.message || e}`, "err");
 	}
 	refresh();
 }
@@ -111,7 +111,7 @@ $("#btnGrant").addEventListener("click", async () => {
 		if (perm === "granted") setStatus(`Folder "${handle.name}" is connected again.`, "ok");
 		else setStatus("Access was not granted.", "err");
 	} catch (e) {
-		setStatus(`Could not connect the folder: ${(e?.message) || e}`, "err");
+		setStatus(`Could not connect the folder: ${e?.message || e}`, "err");
 	}
 	refresh();
 });

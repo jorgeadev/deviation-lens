@@ -24,6 +24,7 @@ coverage/
 
 # Local-only task notes
 TODO.md
+PROPOSED_CHANGES.md
 .trash/
 
 # Private account and channel assets; never pushed

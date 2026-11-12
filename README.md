@@ -4,7 +4,7 @@ Deviation Lens is the Chrome extension in [`apps/extension/`](apps/extension/) f
 
 [![Watch the Deviation Lens promo video](apps/web/assets/0.2.0/promo-readme.jpg)](https://jorgeadev.github.io/deviation-lens/#video)
 
-**Version:** `0.2.0` · **Status:** Early access · **Minimum Chrome version:** 141
+**Version:** `0.2.1` · **Status:** Early access · **Minimum Chrome version:** 141
 
 > The extension is in active development. Features and behavior may change before a stable release.
 

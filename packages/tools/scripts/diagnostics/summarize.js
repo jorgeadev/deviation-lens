@@ -23,6 +23,12 @@ show("AFTER", d.after);
 show("AFTER-ESC", d.afterEsc);
 
 console.log("== REQUESTS ==");
-d.requests.forEach((r) => { console.log(`${fmtToken(r.token)} || ${r.url.slice(0, 160)}`); });
+d.requests.forEach((r) => {
+	console.log(`${fmtToken(r.token)} || ${r.url.slice(0, 160)}`);
+});
 console.log("== RESPONSES ==");
-d.responses.filter((r) => /wixmp|\/download\//.test(r.url)).forEach((r) => { console.log(`${r.status} len=${r.len} ${r.type} ${r.url.slice(0, 130)}`); });
+d.responses
+	.filter((r) => /wixmp|\/download\//.test(r.url))
+	.forEach((r) => {
+		console.log(`${r.status} len=${r.len} ${r.type} ${r.url.slice(0, 130)}`);
+	});

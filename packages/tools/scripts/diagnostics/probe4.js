@@ -10,12 +10,19 @@ function allUrls(d) {
 		if (d[k]) {
 			(d[k].imgs || []).forEach((i) => {
 				urls.add(i.src);
-				if (i.srcset) i.srcset.split(",").forEach((s) => { urls.add(s.trim().split(" ")[0]); });
+				if (i.srcset)
+					i.srcset.split(",").forEach((s) => {
+						urls.add(s.trim().split(" ")[0]);
+					});
 			});
 		}
 	});
-	(d.requests || []).forEach((u) => { urls.add(typeof u === "string" ? u : u.url); });
-	(d.responses || []).forEach((u) => { urls.add(u.url); });
+	(d.requests || []).forEach((u) => {
+		urls.add(typeof u === "string" ? u : u.url);
+	});
+	(d.responses || []).forEach((u) => {
+		urls.add(u.url);
+	});
 	return [...urls];
 }
 

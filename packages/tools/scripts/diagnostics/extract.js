@@ -22,12 +22,25 @@ process.argv.slice(3).forEach((f) => {
 	const collectImgs = (arr) =>
 		(arr || []).forEach((i) => {
 			add(i.src);
-			if (i.srcset) i.srcset.split(",").forEach((s) => { add(s.trim().split(" ")[0]); });
+			if (i.srcset)
+				i.srcset.split(",").forEach((s) => {
+					add(s.trim().split(" ")[0]);
+				});
 		});
-	[d.before, d.after, d.afterEsc].forEach((s) => { if (s) collectImgs(s.imgs); });
-	["scan1", "scan2", "scan3"].forEach((k) => { collectImgs(d[k]); });
-	(d.requests || []).forEach((r) => { add(typeof r === "string" ? r : r.url); });
-	(d.responses || []).forEach((r) => { add(r.url); });
+	[d.before, d.after, d.afterEsc].forEach((s) => {
+		if (s) collectImgs(s.imgs);
+	});
+	["scan1", "scan2", "scan3"].forEach((k) => {
+		collectImgs(d[k]);
+	});
+	(d.requests || []).forEach((r) => {
+		add(typeof r === "string" ? r : r.url);
+	});
+	(d.responses || []).forEach((r) => {
+		add(r.url);
+	});
 	console.log("==", f, `(${all.size} urls)`);
-	[...all].forEach((u) => { console.log(`${decode(u)} || ${u.slice(0, 320)}`); });
+	[...all].forEach((u) => {
+		console.log(`${decode(u)} || ${u.slice(0, 320)}`);
+	});
 });

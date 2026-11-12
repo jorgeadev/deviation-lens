@@ -77,14 +77,14 @@ async function probe(browser, { mobile, label }) {
 				h: i.naturalHeight,
 				cw: i.clientWidth,
 				ch: i.clientHeight,
-				cls: (`${i.className || ""}`).slice(0, 150),
+				cls: `${i.className || ""}`.slice(0, 150),
 				inLink: i.closest("a") ? i.closest("a").getAttribute("href") : null,
 			}));
 			const dialogs = Array.from(
 				document.querySelectorAll('[role="dialog"],[class*="viewer" i],[class*="portal" i],[class*="zoom" i],[class*="lightbox" i]'),
 			).map((e) => ({
 				tag: e.tagName,
-				cls: (`${e.className}`).slice(0, 150),
+				cls: `${e.className}`.slice(0, 150),
 			}));
 			const bodyKids = Array.from(document.body.children).map((e) => `${e.tagName}.${(`${e.className}` || e.id || "").slice(0, 100)}`);
 			return { imgs, dialogs, bodyKids, title: document.title, url: location.href };
@@ -121,7 +121,7 @@ async function probe(browser, { mobile, label }) {
 			h: best.naturalHeight,
 			x: r.x + r.width / 2,
 			y: r.y + r.height / 2,
-			cls: (`${best.className}`).slice(0, 150),
+			cls: `${best.className}`.slice(0, 150),
 		};
 	});
 
